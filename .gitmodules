@@ -1,0 +1,9 @@
+[submodule "upstream/oh-my-claudecode"]
+	path = upstream/oh-my-claudecode
+	url = https://github.com/Gunther-Schulz/oh-my-claudecode.git
+[submodule "upstream/clawhip"]
+	path = upstream/clawhip
+	url = https://github.com/Gunther-Schulz/clawhip.git
+[submodule "reference/oh-my-openagent"]
+	path = reference/oh-my-openagent
+	url = https://github.com/Gunther-Schulz/oh-my-openagent.git
