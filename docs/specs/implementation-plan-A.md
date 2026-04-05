@@ -37,7 +37,7 @@ in practice" are built now and tuned later.
 
 ## Packaging: Claude Code plugin
 
-Same pattern as bildhauer and clippy. Plugin structure:
+Same pattern as bildhauer and clippy. Lives at `plugin/` in the repo root.
 
 ```
 plugin/
@@ -54,6 +54,18 @@ plugin/
 └── bin/
     └── clawdance-loop.sh          # Session loop script
 ```
+
+**Installation:** `update-plugin.sh` at repo root (same pattern as
+bildhauer). Registers plugin in local marketplace, installs for testing.
+Run `/reload-plugins` in Claude Code after.
+
+**Telegram sink:** Lives in `upstream/clawhip/` (our fork), not in the
+plugin. Separate Rust work, separate git history. PR to our fork.
+
+**Per-project state (.clawdance/):** Created by the decomposer in the
+target project. Useful beyond the initial build — constraints.yaml serves
+ongoing maintenance, checkpoints are historical record, task-graph is the
+decomposition record. Not deleted after completion.
 
 **plugin.json:**
 ```json
@@ -287,8 +299,13 @@ Key steps:
 5. Execute (ralph for single, team for parallel)
 6. Post-unit (checkpoint, YAML validation, constraint review,
    progress.txt mining with dedup, state update + reset failures)
-7. Loop or stop
-8. All complete → full-stack integration tests → done
+7. Sweep check — cheap, open-ended: "is the state consistent?
+   anything look wrong? any loose ends?" Catches housekeeping and
+   inconsistencies that structured checks miss. Complements the
+   bildhauer-style checks at transitions.
+8. Loop or stop
+9. All complete → bildhauer-style structural check (data-flow trace
+   across all components) → full-stack integration tests → done
 ```
 
 **Key behaviors:**

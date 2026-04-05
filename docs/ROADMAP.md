@@ -321,15 +321,39 @@ adjacent items when modifying one.
 ## Repository structure
 
 ```
+plugin/                          # The product — Claude Code plugin
+├── .claude-plugin/
+│   └── plugin.json              # Plugin manifest
+├── skills/
+│   ├── clawdance/SKILL.md       # Session skill
+│   ├── clawdance-decompose/SKILL.md  # Decomposer
+│   └── clawdance-build/SKILL.md # Full auto mode
+├── CLAUDE.md                    # Constraint convention (injected into sessions)
+└── bin/
+    └── clawdance-loop.sh        # Session loop script
 docs/
 ├── ROADMAP.md                   # This file
 ├── decisions/                   # ADRs (numbered, with reasoning)
 ├── research/                    # Ecosystem analysis, challenges, comparisons
-└── specs/                       # Future: contracts, schemas, component specs
+└── specs/                       # Spec and implementation plan
 upstream/
 ├── oh-my-claudecode/            # Fork (submodule) — build on and PR to
-└── clawhip/                     # Fork (submodule) — build on and PR to
+└── clawhip/                     # Fork (submodule) — Telegram sink goes here
 reference/
 └── oh-my-openagent/             # Fork (submodule) — study material
-src/                             # Our own code (when we build things)
+update-plugin.sh                 # Install/reinstall plugin for local testing
 ```
+
+### Per-project state (created by decomposer, lives in target project)
+
+```
+.clawdance/
+├── task-graph.yaml              # Units, dependencies, parallelism groups
+├── state.yaml                   # Progress, active session, errors
+├── constraints.yaml             # Cross-component invariants
+└── checkpoints/                 # One file per completed unit
+```
+
+Note: `.clawdance/` is useful beyond the initial build. constraints.yaml
+is valuable for ongoing maintenance (future sessions know the invariants),
+checkpoints are historical record, task-graph is the decomposition record.

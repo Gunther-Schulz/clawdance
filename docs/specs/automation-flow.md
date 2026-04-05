@@ -343,7 +343,11 @@ and state updates.
 6. **Merge constraints** — if parallel units discovered new constraints
    (in their checkpoint new_constraints fields), merge into
    constraints.yaml.
-7. **Loop or stop** — if more units remain and context window has room,
+7. **Sweep check** — cheap, open-ended: "Is the state consistent?
+   Anything look wrong? Any loose ends?" Catches housekeeping and
+   inconsistencies that the structured post-unit checks miss. Complements
+   bildhauer-style structural checks at transitions.
+8. **Loop or stop** — if more units remain and context window has room,
    go to step 2. Otherwise, write state and let the session end.
 
 ### Parallel execution
