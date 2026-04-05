@@ -70,9 +70,21 @@ graph confirmation → build via ralph. Key findings:
 4. **Design phase is a minimal stand-in** (item B). Works for the basic
    flow but needs enhancement for deeper research, multi-pass exploration,
    and existing codebase analysis.
-5. **Seam 2 (ralph exit → checkpoint)** — appeared to stall but was
-   actually waiting for permission prompt. Architecture works, need to
-   verify checkpoint is written after ralph completes.
+5. **Seam 2 (ralph exit → checkpoint)** — works. Ralph completed,
+   /cancel ran, control returned, checkpoint written. Verified on unit-001.
+6. **Direct agent delegation breaks the loop.** Unit-004 used executor
+   agent instead of ralph. Agent completed but session ended without
+   checkpointing. Fixed: build skill now mandates ralph for all units
+   (--no-prd for trivial ones).
+7. **Constraint schema drift.** Decomposer used `rule` instead of
+   `description`, `confidence: specified` instead of `inferred|verified`.
+   Skills don't strictly follow the schema we defined.
+8. **No constraints discovered during build.** All 8 constraints are
+   from design. Post-unit constraint review either didn't run or didn't
+   find anything. The self-improving tracking isn't being exercised.
+9. **Build completed successfully.** 8/8 units, 19 source files, 31
+   tests all passing, TypeScript compiles clean. Full working habit
+   tracker API built autonomously from a one-line idea.
 
 ### Next steps
 
