@@ -40,13 +40,13 @@ cd ~/dev/Gunther-Schulz/clawdance
 
 ## Usage
 
-### Start a new build
+### New project
 
 ```
 /clawdance "Build me a task management app with real-time collaboration"
 ```
 
-clawdance detects that no design exists and walks you through:
+clawdance detects no code and no state — walks you through:
 
 1. **Design** — clarifies your idea, proposes architecture, produces
    design artifacts (DESIGN.md, STACK.md, contracts). You review and
@@ -56,6 +56,20 @@ clawdance detects that no design exists and walks you through:
 3. **Build** — executes units autonomously via OMC (ralph for single
    units, team for parallel groups). Writes checkpoints, discovers
    constraints.
+
+### Existing project
+
+```
+/clawdance "Add real-time collaboration to this app"
+```
+
+clawdance detects existing source code — analyzes the codebase first:
+
+1. **Analyze** — reads project structure, identifies components, discovers
+   constraints from code patterns
+2. **Human checkpoint** — "Here's what I see. Correct or redirect."
+3. **Design the change** — what's new, what's modified, updated contracts
+4. **Decompose + Build** — same as new project from here
 
 ### Resume after session death
 
@@ -112,13 +126,11 @@ clawdance uses an orchestrator + phase skills architecture:
 Each phase skill gets a fresh context per invocation. The orchestrator
 manages the loop and transitions. State-driven:
 
-| State | Phase |
+| State | Mode |
 |---|---|
-| No design, no build state | Design — iterative, increasing resolution |
-| Design exists, no build state | Decompose — design → task graph |
-| Task graph pending | Review task graph, start building |
-| Build in progress | Resume from last checkpoint |
-| Build completed | Report done |
+| No code, no .clawdance/ | **New build** — design from scratch |
+| Code exists, no .clawdance/ | **Init existing** — analyze codebase, then design the change |
+| .clawdance/ exists | **Resume** — continue from current phase |
 
 Across all phases, clawdance orchestrates four elements:
 
@@ -166,15 +178,8 @@ All state lives in `.clawdance/` in your project:
 | `constraints.yaml` | Cross-component invariants |
 | `checkpoints/unit-NNN.yaml` | Per-unit completion records |
 
-Design artifacts live in `design/`:
-
-| File | Purpose |
-|---|---|
-| `DESIGN.md` | Architecture, components, data flow |
-| `STACK.md` | Tech stack, testing approach |
-| `contracts/` | One file per inter-component interface |
-
-All files are human-readable and git-trackable.
+Everything lives under `.clawdance/` — one hidden directory, clean
+project root. All files are human-readable and git-trackable.
 
 ## License
 

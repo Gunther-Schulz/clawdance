@@ -95,7 +95,7 @@ Fix before returning to orchestrator.
 ### 8. All units complete
 
 If no units remain in `units_remaining`:
-1. Run full-stack integration tests per `design/STACK.md`
+1. Run full-stack integration tests per `.clawdance/design/STACK.md`
 2. If tests fail: identify missing constraint, add with
    `discovered_by: integration_test`. Mark relevant unit failed, move
    to remaining. Report to orchestrator.

@@ -7,7 +7,7 @@ argument-hint: "<idea or focus area>"
 # clawdance-design — Design Phase
 
 You handle one focused aspect of design per invocation. Read what exists,
-do your focused work, write results to `design/`. The orchestrator calls
+do your focused work, write results to `.clawdance/design/`. The orchestrator calls
 you multiple times at increasing resolution.
 
 ## Detect focus
@@ -16,11 +16,63 @@ Based on what exists and what the orchestrator asked for:
 
 | State | Focus |
 |---|---|
-| No `design/` at all + user idea provided | Architecture — full initial design |
-| `design/DESIGN.md` exists, no `STACK.md` | Stack — tech stack and testing |
-| `design/DESIGN.md` + `STACK.md` exist, contracts incomplete | Contracts — specific interface |
+| Orchestrator says "analyze" + source code exists | Analyze — reverse-engineer existing codebase |
+| No `.clawdance/design/` at all + user idea provided | Architecture — full initial design |
+| `.clawdance/design/DESIGN.md` exists, no `STACK.md` | Stack — tech stack and testing |
+| `.clawdance/design/DESIGN.md` + `STACK.md` exist, contracts incomplete | Contracts — specific interface |
 | All artifacts exist | Validate — coherence check |
 | Orchestrator specified a focus | That specific focus |
+
+## Analyze focus (existing projects)
+
+When the orchestrator invokes you in analyze mode, the project already has
+source code. Your job: understand what exists and produce design artifacts
+that describe the CURRENT system, not a new design.
+
+### Read the codebase (targeted, not exhaustive)
+
+- Read project structure: directory layout, package files (package.json,
+  go.mod, Cargo.toml, pyproject.toml, etc.), entry points
+- Identify components: what are the distinct modules/services/packages?
+- Identify connections: how do components talk to each other? (imports,
+  API calls, shared databases, message queues)
+- Identify tech stack: languages, frameworks, databases, testing tools
+
+Don't read every file. Read structure + key files (entry points, config,
+main modules). For a specific feature request, focus on the area that
+feature will touch.
+
+### Produce design artifacts
+
+Write `.clawdance/design/DESIGN.md` describing what EXISTS:
+- Components and their responsibilities (as they ARE, not as you'd design)
+- How they connect (actual data flow, not ideal)
+- Dependencies between them
+
+Write `.clawdance/design/STACK.md` from actual tech stack:
+- Actual languages, frameworks, libraries in use
+- How tests are actually run (read package.json scripts, Makefile, etc.)
+- How the project is actually built and run
+
+Write `.clawdance/design/contracts/` for existing inter-component
+interfaces. These may be implicit — extract them from actual code
+(API routes, shared types, database schemas).
+
+### Seed constraints
+
+Read codebase patterns and seed `.clawdance/constraints.yaml` with
+discovered invariants. Examples:
+- "All API routes use the auth middleware"
+- "Database queries go through the ORM, never raw SQL"
+- "Frontend expects paginated responses from all list endpoints"
+
+These get `discovered_by: init` and `confidence: inferred`. The build
+skill upgrades to `verified` when it confirms them during implementation.
+
+### Report
+
+Present what you found: "Here's the architecture I see. [summary].
+[N] constraints discovered." The human corrects or approves.
 
 ## Architecture focus
 
@@ -39,7 +91,7 @@ all questions at once.
 
 ### Propose and write
 
-Produce `design/DESIGN.md`:
+Produce `.clawdance/design/DESIGN.md`:
 - Components/services/modules and their responsibilities
 - How components connect (which calls which, data flow direction)
 - Dependencies between components (what must exist before what)
@@ -50,24 +102,24 @@ The user approves or redirects.
 
 ## Stack focus
 
-Produce `design/STACK.md`:
+Produce `.clawdance/design/STACK.md`:
 - Languages, frameworks, libraries (with rationale)
 - Database and schema management approach
 - How to run unit tests
 - How to run integration tests (docker compose, in-process, etc.)
 - How to build and run the project
 
-Read `design/DESIGN.md` first — the stack must serve the architecture.
+Read `.clawdance/design/DESIGN.md` first — the stack must serve the architecture.
 
 ## Contracts focus
 
 For a specific inter-component interface, produce a contract file in
-`design/contracts/`:
+`.clawdance/design/contracts/`:
 - API contracts: endpoints, methods, request/response shapes, error codes
 - Data model contracts: schemas, shared types, field definitions
 - Event contracts: message formats, topics, delivery guarantees
 
-Read `design/DESIGN.md` to understand the interface. The contract must be
+Read `.clawdance/design/DESIGN.md` to understand the interface. The contract must be
 specific enough that two agents implementing each side independently would
 produce compatible code.
 

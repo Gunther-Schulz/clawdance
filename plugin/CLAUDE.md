@@ -31,7 +31,8 @@ constraints:
   - id: c-NNN
     description: "Human-readable description of the invariant"
     affects: [component-a, component-b]
-    added_by: unit-NNN        # or "design"
-    discovered_by: unit_review # unit_review | integration_test | design
+    added_by: unit-NNN        # or "design" or "init"
+    discovered_by: unit_review # design | init | unit_review | integration_test
+    confidence: verified       # inferred (from analysis) | verified (confirmed by implementation)
     created_at: YYYY-MM-DD
 ```

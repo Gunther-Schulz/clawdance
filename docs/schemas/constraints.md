@@ -17,11 +17,15 @@ constraints:
   - id: c-001                       # Required. Unique, auto-incrementing.
     description: "..."               # Required. Human-readable invariant.
     affects: [component-a, ...]      # Required. Components that must respect this.
-    added_by: unit-001               # Required. Unit that discovered it, or "design".
+    added_by: unit-001               # Required. Unit that discovered it, or "design" or "init".
     discovered_by: unit_review       # Required. One of:
                                      #   design — identified during design phase
+                                     #   init — inferred from existing codebase analysis
                                      #   unit_review — found by post-unit review
                                      #   integration_test — found by integration test failure
+    confidence: verified             # Required. One of:
+                                     #   inferred — from codebase analysis (might be wrong)
+                                     #   verified — confirmed during implementation
     created_at: 2026-04-05           # Required. ISO date.
 ```
 
@@ -51,10 +55,10 @@ the task graph.
 
 ### added_by
 
-Which unit discovered this constraint, or "design" if it was identified
-during the design phase (step 2 of the product workflow). Used for
-traceability — knowing which unit introduced a constraint helps when
-debugging or when the constraint needs updating.
+Which unit discovered this constraint, or "design" (from design phase),
+or "init" (from existing codebase analysis). Used for traceability —
+knowing which unit introduced a constraint helps when debugging or when
+the constraint needs updating.
 
 ### discovered_by
 
@@ -62,6 +66,7 @@ How the constraint was discovered. Tracks effectiveness of the discovery
 mechanisms:
 
 - `design` — identified during design phase, before implementation began
+- `init` — inferred from existing codebase analysis during project init
 - `unit_review` — found by the post-unit constraint review step ("what
   constraints does this impose on other components?")
 - `integration_test` — found when an integration test failed and the
@@ -70,6 +75,19 @@ mechanisms:
 Over time, the ratio of `unit_review` to `integration_test` discoveries
 shows whether the review step is effective. If integration tests keep
 catching things the review misses, the review prompt needs refinement.
+
+### confidence
+
+Whether the constraint has been confirmed by implementation experience:
+
+- `inferred` — from codebase analysis or design reasoning. Might be wrong.
+  The AI interpreted the code and concluded this invariant exists, but
+  hasn't tested it by building against it. Init-phase constraints start
+  here.
+- `verified` — confirmed during implementation. The agent hit this
+  constraint while building, or an integration test confirmed it. Build-
+  phase constraints start here. The build skill upgrades inferred →
+  verified when it confirms a constraint during implementation.
 
 ### created_at
 

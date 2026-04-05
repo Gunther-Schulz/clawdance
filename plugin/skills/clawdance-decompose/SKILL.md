@@ -1,7 +1,7 @@
 ---
 name: clawdance-decompose
-description: Decompose design artifacts into a task graph. Reads design/, produces .clawdance/ with task-graph.yaml, state.yaml, constraints.yaml. Called by the orchestrator after design is complete.
-argument-hint: "[path to design/ directory, default: design/]"
+description: Decompose design artifacts into a task graph. Reads .clawdance/design/, produces .clawdance/ with task-graph.yaml, state.yaml, constraints.yaml. Called by the orchestrator after design is complete.
+argument-hint: "[path to .clawdance/design/ directory, default: .clawdance/design/]"
 ---
 
 # clawdance-decompose — Decomposition Phase
@@ -13,8 +13,8 @@ Called once by the orchestrator after the design phase is complete.
 
 ### 1. Read design artifacts
 
-Read `design/DESIGN.md`, `design/STACK.md`, and all files in
-`design/contracts/`. Understand components, connections, tech stack, and
+Read `.clawdance/design/DESIGN.md`, `.clawdance/design/STACK.md`, and all files in
+`.clawdance/design/contracts/`. Understand components, connections, tech stack, and
 testing approach.
 
 ### 2. Identify units
@@ -38,7 +38,7 @@ For each unit:
 
 ### 5. Validate
 
-- Every inter-component interface has a contract in `design/contracts/`.
+- Every inter-component interface has a contract in `.clawdance/design/contracts/`.
   **If missing: STOP and report the gap.** Do not guess.
 - Unit size heuristics: >10 files? >2 component boundaries? Multiple
   independent features? → split.
