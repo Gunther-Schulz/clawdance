@@ -1,31 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# update-plugin.sh — Install or update the clawdance plugin.
+# update-plugin.sh — Update the installed clawdance plugin after pushing changes.
 # Usage: ./update-plugin.sh
 # After running, use /reload-plugins in Claude Code to pick up changes.
+#
+# First-time install (run inside Claude Code):
+#   /plugin marketplace add Gunther-Schulz/clawdance
+#   /plugin install clawdance@clawdance-marketplace
+#   /reload-plugins
 
-MARKETPLACE="clawdance-marketplace"
-GITHUB_REPO="Gunther-Schulz/clawdance"
-PLUGIN="clawdance@${MARKETPLACE}"
+echo "Updating clawdance marketplace..."
+claude plugin marketplace update clawdance-marketplace
 
-echo "=== clawdance installer ==="
-echo ""
-
-# Register or update marketplace
-if claude plugin marketplace list 2>/dev/null | grep -q "$MARKETPLACE"; then
-  echo "Updating marketplace..."
-  claude plugin marketplace update "$MARKETPLACE"
-else
-  echo "Registering marketplace..."
-  claude plugin marketplace add "$GITHUB_REPO"
-fi
-
-# Install plugin
-echo "Installing plugin..."
-claude plugin uninstall "$PLUGIN" 2>/dev/null || true
-claude plugin install "$PLUGIN"
+echo "Reinstalling plugin..."
+claude plugin uninstall clawdance@clawdance-marketplace
+claude plugin install clawdance@clawdance-marketplace
 
 echo ""
 echo "Done. Run /reload-plugins in Claude Code to activate."
-echo "Then use /clawdance in your project to get started."

@@ -12,14 +12,21 @@ A Claude Code plugin that takes you from idea to working product.
 
 ## Install
 
-```bash
-git clone https://github.com/Gunther-Schulz/clawdance.git
-cd clawdance
-./update-plugin.sh
+First time (inside Claude Code):
+
+```
+/plugin marketplace add Gunther-Schulz/clawdance
+/plugin install clawdance@clawdance-marketplace
+/reload-plugins
 ```
 
-The install script registers the marketplace and installs the plugin
-(including hooks). Then in Claude Code: `/reload-plugins`
+After pushing changes (from terminal):
+
+```bash
+cd ~/dev/Gunther-Schulz/clawdance
+./update-plugin.sh
+# then /reload-plugins in Claude Code
+```
 
 ## Usage
 
