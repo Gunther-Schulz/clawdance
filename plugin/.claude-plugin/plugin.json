@@ -1,0 +1,10 @@
+{
+  "name": "clawdance",
+  "version": "0.1.0",
+  "description": "Autonomous app development with cross-session constraint persistence. Orchestrates find-resolve-persist-redirect loop across session boundaries.",
+  "author": {
+    "name": "Gunther Schulz"
+  },
+  "repository": "https://github.com/Gunther-Schulz/clawdance",
+  "license": "MIT"
+}
