@@ -52,9 +52,34 @@
 
 Plugin installed, all skills loaded. Ready for first real test.
 
+### First test run findings (habit tracker API)
+
+The basic flow works: detect → design (iterative) → decompose → task
+graph confirmation → build via ralph. Key findings:
+
+1. **Prerequisite check launched an Explore agent** — fixed (now fast
+   directory check only).
+2. **Process not transparent enough.** The user can't see what ralph is
+   being told, what the PRD stories are, what constraints were discovered,
+   what checkpoints contain. The orchestrator says "doing X" but doesn't
+   show its work. Needs design: transparency at transitions without
+   overwhelming the user.
+3. **Interactivity during ambiguous pre-implementation steps.** The
+   decomposer and design skills don't stop to ask if something is unclear
+   — they either proceed or hard-stop. Should present ambiguity and ask.
+4. **Design phase is a minimal stand-in** (item B). Works for the basic
+   flow but needs enhancement for deeper research, multi-pass exploration,
+   and existing codebase analysis.
+5. **Seam 2 (ralph exit → checkpoint)** — appeared to stall but was
+   actually waiting for permission prompt. Architecture works, need to
+   verify checkpoint is written after ralph completes.
+
 ### Next steps
 
-1. **Test on a real project** — /clawdance "Build me X" end-to-end.
+1. **Design transparency layer** — what the orchestrator shows the user
+   at each transition. Balance between visibility and noise. This is the
+   main UX finding from the test.
+2. **Test on a real project** — /clawdance "Build me X" end-to-end.
    Validates seam 2 (ralph exit → skill resumption) and overall flow.
 2. **Refine based on testing** — tune unit sizing, constraint discovery,
    context management.
