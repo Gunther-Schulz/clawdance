@@ -1,7 +1,7 @@
 # Session Handoff
 
 **Last updated:** 2026-04-05
-**Status:** Item A steps 1-5, 7 implemented. Step 6 (Telegram sink) remaining.
+**Status:** Item A fully implemented, plugin installed and working.
 
 ## What happened this session
 
@@ -9,56 +9,69 @@
    analysis, Gas Town deep-dive, stack decisions, Bildhauer validation,
    session case study, four-element loop articulation.
 
-2. Implemented item A steps 1-5, 7:
-   - Plugin scaffold (plugin.json, CLAUDE.md, directory structure)
-   - constraints.yaml schema + convention (plugin CLAUDE.md)
-   - State format schemas (docs/schemas/ dev reference)
-   - Session skill SKILL.md (~180 lines)
-   - Decomposer SKILL.md (~130 lines)
-   - Session loop bash script (~80 lines with rate-limit awareness)
-   - Full auto mode SKILL.md (~20 lines, thin wrapper)
-   - update-plugin.sh for local testing
+2. Implemented all item A deliverables:
+   - Orchestrator + 3 phase skills (design, decompose, build)
+   - Plugin CLAUDE.md (constraint convention)
+   - PreCompact hook (hooks.json + script)
+   - Session loop bash script with rate-limit-aware retry + Telegram
+   - Telegram sink for clawhip (Rust, compiles, 272 tests pass)
+   - marketplace.json + plugin.json (proper plugin structure)
+   - README with install and usage docs
 
-3. Updated bildhauer: observation 19 (diminishing returns), conditional
-   self-challenge, refinement completion check, data-flow trace elevation.
+3. Restructured from monolithic skill to orchestrator + phase skills:
+   - /clawdance — orchestrator (state-driven, invokes phase skills)
+   - clawdance-design — iterative design (one aspect per invocation)
+   - clawdance-decompose — design → task graph
+   - clawdance-build — one unit per invocation via OMC ralph/team
 
-4. Clarified project structure: plugin/ = product, docs/ = dev reference,
-   upstream/ = dev workspace for extending deps. Product doesn't reference
-   docs/ or upstream/.
+4. Integrated minimal item B (design flow) as Phase 1 of the orchestrator.
+   User says "Build me X" → design conversation → artifacts → decompose → build.
 
-### Key decisions this session
+5. Fixed plugin packaging: marketplace.json at repo root, plugin in
+   subdirectory, hooks.json for PreCompact, removed submodules that
+   blocked installation.
+
+6. Updated bildhauer: observation 19/20, conditional self-challenge,
+   diminishing returns check, data-flow trace elevation.
+
+7. Plugin installed and verified: all 4 skills loaded, hook registered.
+
+### Key decisions
 
 - ADR-005: Thin layer on OMC, not Gas Town
-- ADR-003: Superseded — no TypeScript, YAML + SKILL.md + bash + Rust
-- Four-element loop: find, resolve, persist, redirect
+- ADR-003 superseded: no TypeScript (YAML + SKILL.md + bash + Rust)
+- Orchestrator + phase skills (not monolithic)
+- Single entry point: /clawdance "Build me X"
+- Dependencies not submodules — dev workspace cloned separately
 - Self-resolution + recommendation-first interaction principles
-- Sweep checks (broad) + bildhauer (structural) as complementary review angles
+- Four-element loop: find, resolve, persist, redirect
 
 ## Where to pick up
 
-### Remaining for item A
+### Item A: complete
 
-- **Step 6: Telegram sink for clawhip (Rust)** — extend upstream/clawhip/
-  with native Telegram bot API sink. Follow existing Discord webhook
-  pattern. Independent work, different language.
-- **Test the plugin** — install via update-plugin.sh, verify skills load,
-  test on a small project.
-- **Validate seam 2** — does ralph exit return control to the session skill?
-  Highest-risk integration point.
+Plugin installed, all skills loaded. Ready for first real test.
 
-### After item A
+### Next steps
 
-- Item B: design flow (steps 1-2). Four-element loop applies here too.
-- Item C: validate A+B handoff. Is the design format sufficient?
-- Revisit process conventions — what artifacts does the design phase need?
+1. **Test on a real project** — /clawdance "Build me X" end-to-end.
+   Validates seam 2 (ralph exit → skill resumption) and overall flow.
+2. **Refine based on testing** — tune unit sizing, constraint discovery,
+   context management.
+3. **Push clawhip Telegram sink upstream** — or maintain as our fork.
+4. **Item B refinement** — the design phase is minimal (Phase 1 of
+   orchestrator). Enhance with deeper research, competitive analysis,
+   multi-pass exploration.
+5. **Item C** — validate A+B handoff with real projects.
 
 ### Context the next session needs
 
+- Plugin is installed: `/clawdance "Build me X"` works.
 - Core spec: `docs/specs/automation-flow.md`
 - Implementation plan: `docs/specs/implementation-plan-A.md`
-- Plugin is at `plugin/` — the product. Self-contained.
-- `docs/` is dev reference only, not part of the product.
-- `upstream/` is dev workspace (forks for studying/extending).
-- OMC is used as-is. Ralph for single units, team for parallel.
-- Gas Town at ~/dev/reference/gastown for reference.
-- Bildhauer updated this session — observation 19, conditional self-challenge.
+- `plugin/` is the product. `docs/` is dev reference.
+- `upstream/` and `reference/` are gitignored dev workspace — clone
+  separately for development.
+- OMC is a prerequisite plugin. Orchestrator checks at runtime.
+- Gas Town at ~/dev/reference/gastown for reference (ADR-005).
+- Bildhauer updated this session — observations 18-20.
