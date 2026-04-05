@@ -40,9 +40,20 @@ clean project root.
 
 ### 0. Check prerequisites
 
-On first invocation, verify OMC is loaded (check for `.omc/`, OMC
-CLAUDE.md content, or known OMC skills). If not found, report install
-instructions and stop. Check once per session.
+On first invocation, verify OMC is loaded. Do this quickly — no research,
+no agents, no exploration. Just check:
+1. Does `.omc/` directory exist? OR
+2. Is `oh-my-claudecode` in the loaded skills list?
+
+If neither: report this and stop:
+"OMC plugin not detected. Install it:
+  /plugin marketplace add Yeachan-Heo/oh-my-claudecode
+  /plugin install oh-my-claudecode@oh-my-claudecode
+  /reload-plugins
+Then run /clawdance again."
+
+Do NOT launch agents, search the codebase, or research OMC. Just check
+and report. This should take under 2 seconds.
 
 ### 1. Validate state
 
