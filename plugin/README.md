@@ -8,8 +8,9 @@ A Claude Code plugin that takes you from idea to working product.
 **Required:**
 - [Claude Code](https://claude.ai/code)
 - [oh-my-claudecode (OMC)](https://github.com/Yeachan-Heo/oh-my-claudecode)
-  plugin — install via `/plugin marketplace add Yeachan-Heo/oh-my-claudecode`
-  then `/plugin install oh-my-claudecode@oh-my-claudecode`
+  plugin — install globally so it's available in all projects:
+  `/plugin marketplace add Yeachan-Heo/oh-my-claudecode`
+  then `/plugin install oh-my-claudecode@oh-my-claudecode --scope user`
 
 **For the session loop (unattended builds):**
 - `tmux`

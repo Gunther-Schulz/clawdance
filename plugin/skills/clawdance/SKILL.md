@@ -46,9 +46,9 @@ no agents, no exploration. Just check:
 2. Is `oh-my-claudecode` in the loaded skills list?
 
 If neither: report this and stop:
-"OMC plugin not detected. Install it:
+"OMC plugin not detected. Install it globally (available in all projects):
   /plugin marketplace add Yeachan-Heo/oh-my-claudecode
-  /plugin install oh-my-claudecode@oh-my-claudecode
+  /plugin install oh-my-claudecode@oh-my-claudecode --scope user
   /reload-plugins
 Then run /clawdance again."
 
