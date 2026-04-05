@@ -24,11 +24,21 @@ through hooks, MCP, skills, CLAUDE.md, Agent tool, SendMessage, Tasks.
 - `docs/` — **Development reference only.** Roadmap, ADRs, research, specs,
   implementation plans. Not part of the shipped product. Lives here for
   our use during development.
-- `upstream/` — **Dev workspace.** Git submodules (forks) of OMC and
-  clawhip. For studying source and adding features (e.g., Telegram sink
-  in clawhip). Not imported by the product — users install OMC and clawhip
-  separately.
-- `reference/` — Git submodule of oh-my-openagent (study material only).
+- `upstream/` — **Dev workspace.** Cloned forks of OMC and clawhip (not
+  submodules — gitignored). For studying source and adding features (e.g.,
+  Telegram sink in clawhip). Not imported by the product.
+- `reference/` — Cloned repos for study (gitignored).
+
+### Dev setup (clone these for development work)
+
+```bash
+git clone https://github.com/Gunther-Schulz/oh-my-claudecode upstream/oh-my-claudecode
+git clone https://github.com/Gunther-Schulz/clawhip upstream/clawhip
+git clone https://github.com/Gunther-Schulz/oh-my-openagent reference/oh-my-openagent
+```
+
+These are for studying source, making PRs, and extending dependencies.
+Not required for using clawdance — only for developing it.
 - `docs/SESSION.md` — Current session state for resuming across sessions.
 
 ### Product vs development

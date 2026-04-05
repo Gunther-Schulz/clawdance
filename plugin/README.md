@@ -5,10 +5,20 @@ A Claude Code plugin that takes you from idea to working product.
 
 ## Prerequisites
 
+**Required:**
 - [Claude Code](https://claude.ai/code)
-- [oh-my-claudecode (OMC)](https://github.com/Yeachan-Heo/oh-my-claudecode) plugin installed
-- `tmux` (for the session loop)
-- `yq` (for the session loop to read YAML state)
+- [oh-my-claudecode (OMC)](https://github.com/Yeachan-Heo/oh-my-claudecode)
+  plugin — install via `/plugin marketplace add Yeachan-Heo/oh-my-claudecode`
+  then `/plugin install oh-my-claudecode@oh-my-claudecode`
+
+**For the session loop (unattended builds):**
+- `tmux`
+- `yq` (YAML processor)
+
+**Optional (richer Telegram monitoring):**
+- [clawhip](https://github.com/Gunther-Schulz/clawhip) — our fork with
+  native Telegram sink. Not needed for basic Telegram (session loop has
+  built-in curl-based notifications).
 
 ## Install
 

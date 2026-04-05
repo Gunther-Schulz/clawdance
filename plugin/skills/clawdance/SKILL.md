@@ -21,6 +21,20 @@ you delegate to focused phase skills and check results.
 
 ## Orchestration Loop
 
+### 0. Check prerequisites
+
+On first invocation, verify:
+- **OMC loaded:** Check if `oh-my-claudecode` skills are available (try
+  to detect OMC's CLAUDE.md content, `.omc/` directory, or known OMC
+  skills). If not found:
+  "OMC plugin not detected. Install it first:
+    /plugin marketplace add Yeachan-Heo/oh-my-claudecode
+    /plugin install oh-my-claudecode@oh-my-claudecode
+    /reload-plugins"
+  Stop.
+
+Only check once per session. If OMC was found, proceed.
+
 ### 1. Detect state
 
 Read the project to determine the current phase:
