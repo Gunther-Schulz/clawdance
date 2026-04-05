@@ -53,20 +53,49 @@ Only check once per session.
 
 ### 1. Detect state
 
-Read the project to determine the mode and phase:
+Read the project to determine the mode and phase.
+
+**First: validate .clawdance/ if it exists.** Check that state files are
+well-formed before making decisions based on them:
+- If `state.yaml` exists: verify it has a `version` field and a valid
+  `status` value. If malformed, report what's wrong and suggest: "Delete
+  .clawdance/state.yaml and re-run, or fix manually." Don't guess.
+- If `constraints.yaml` exists: verify it parses as valid YAML with a
+  `version` field. If corrupted, report and suggest repair.
+- If `task-graph.yaml` exists: verify `version` field and that `units`
+  is a list. If malformed, report.
 
 **Mode detection:**
 
-| Codebase | .clawdance/ | Mode |
-|---|---|---|
-| No source files | Does not exist | **New build** — start from scratch |
-| Source files exist | Does not exist | **Init existing** — analyze codebase first |
-| Any | Exists | **Resume** — continue from current state |
+| Codebase | .clawdance/ | User provided task? | Mode |
+|---|---|---|---|
+| No source files | Does not exist | Yes | **New build** — start from scratch |
+| Source files exist | Does not exist | Yes | **Init existing** — analyze codebase first |
+| Any | Exists, status: completed | Yes | **New cycle** — archive old state, start new build |
+| Any | Exists, status: in_progress | Yes | **New task** — confirm: abandon current or start new? |
+| Any | Exists | No (resume) | **Resume** — continue from current state |
 
 "Source files exist" = the project has code beyond just `.clawdance/`
 (e.g., src/, package.json, go.mod, *.py, etc.).
 
-**Phase detection (when .clawdance/ exists):**
+**New cycle handling (completed + new task):**
+Previous build finished. The user wants to build something new.
+- Preserve `.clawdance/constraints.yaml` (codebase knowledge, not
+  build-scoped)
+- Move old `task-graph.yaml`, `state.yaml`, and `checkpoints/` to
+  `.clawdance/history/<timestamp>/`
+- Proceed with design phase for the new task
+- Design artifacts in `.clawdance/design/` may need updating (amend for
+  new feature, don't replace)
+
+**New task handling (in_progress + new task):**
+Build is underway but user provided a different task. Confirm:
+"There's a build in progress (N/M units complete). Abandon it and start
+[new task], or continue the current build?" If abandon: archive current
+state to history/, start new cycle. If continue: ignore the new task
+description, resume building.
+
+**Phase detection (when resuming, no new task):**
 
 | State | Phase | Action |
 |---|---|---|
