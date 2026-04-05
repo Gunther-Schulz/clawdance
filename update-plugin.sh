@@ -6,8 +6,8 @@ set -euo pipefail
 # After running, use /reload-plugins in Claude Code to pick up changes.
 
 MARKETPLACE="clawdance-marketplace"
+GITHUB_REPO="Gunther-Schulz/clawdance"
 PLUGIN="clawdance@${MARKETPLACE}"
-PLUGIN_DIR="$(cd "$(dirname "$0")" && pwd)/plugin"
 
 # Determine settings.json path (respect CLAUDE_CONFIG_DIR)
 CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
@@ -18,10 +18,12 @@ echo ""
 
 # --- Plugin installation ---
 echo "Installing plugin..."
-claude plugin marketplace update "$MARKETPLACE" 2>/dev/null || {
-  echo "  Marketplace not found. Registering..."
-  claude plugin marketplace add "$MARKETPLACE" "$PLUGIN_DIR"
-}
+if claude plugin marketplace list 2>/dev/null | grep -q "$MARKETPLACE"; then
+  claude plugin marketplace update "$MARKETPLACE"
+else
+  echo "  Registering marketplace..."
+  claude plugin marketplace add "$GITHUB_REPO" --sparse plugin
+fi
 
 claude plugin uninstall "$PLUGIN" 2>/dev/null || true
 claude plugin install "$PLUGIN"
@@ -85,4 +87,4 @@ fi
 
 echo ""
 echo "Done. Run /reload-plugins in Claude Code to activate."
-echo "Then use /clawdance-setup in your project to get started."
+echo "Then use /clawdance in your project to get started."
