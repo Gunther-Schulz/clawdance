@@ -65,9 +65,53 @@ OMC, Bildhauer, and Clippy solve different quality problems:
 
 OMC coordinates many agents working simultaneously. Bildhauer/Clippy make
 each agent think better. The ideal flow uses OMC's orchestration with
-Bildhauer/Clippy's quality discipline embedded in the agents.
+quality discipline embedded in the process.
 
-Integration approaches (not yet decided):
-- A) Replace OMC's reviewer agents with enhanced versions
-- B) Add quality checkpoints as additional pipeline stages
-- C) Run alongside OMC as separate plugins (loose coupling)
+## How to absorb the principles
+
+Real-world validation ([real-world-validation.md](real-world-validation.md))
+showed which principles catch which bugs in practice:
+
+### From Bildhauer — bozzetto data-flow trace
+
+The bozzetto's "trace upstream/downstream" discipline would have caught
+the gzip mismatch bug (otel-collector configured gzip export; audit-sink
+had no gzip decompressor). Neither file was wrong alone — only reading
+both ends of the connection reveals the mismatch.
+
+**Principle to absorb:** Before implementing any cross-component connection,
+trace the data flow in both directions. Read the producing end AND the
+consuming end. This should be a mandatory step in the pre-phase gate of
+our implementation flow, not an external tool invocation.
+
+### From Clippy — investigation before implementation
+
+Clippy's investigation phase would have caught the allowlist bug. Before
+implementing `workflow.get_contract`, reading config.go as part of mapping
+"how do tools get exposed through the gateway?" reveals the hardcoded
+allowlist and the invariant that new tools need entries.
+
+**Principle to absorb:** Before each implementation phase, investigate the
+existing codebase for constraints that affect the new work. This is the
+"evidence must be traceable" principle — the agent must prove it has read
+the relevant files before it writes new ones.
+
+### Bug taxonomy
+
+| Bug category | What catches it | Principle source |
+|---|---|---|
+| In-codebase constraints (Category 1) | Pre-implementation investigation | Clippy |
+| Cross-component data flow (Category 1) | Data-flow boundary trace | Bildhauer |
+| External/runtime behavior (Category 2) | Integration tests per-connection | Neither — requires running the stack |
+
+### Integration approach
+
+**Primary approach:** Build these principles directly into the clawdance
+development process as pipeline stages — pre-phase investigation gates,
+data-flow trace requirements, per-connection integration tests.
+
+**Alternative (noted, not current):** Integrate Bildhauer/Clippy as
+external Claude Code plugins called during specific pipeline stages.
+This preserves their existing implementation but couples to external
+dependencies. Worth reconsidering if the built-in approach proves
+insufficient.

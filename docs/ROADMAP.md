@@ -26,9 +26,14 @@ We are defining what to build. No implementation has started.
   implementation (draft).
 - [ADR-004](decisions/004-build-own-cost-tracking.md) — Build own cost
   tracking, don't depend on ccusage (draft).
+- [ADR-005](decisions/005-thin-layer-over-gas-town.md) — Thin layer on OMC,
+  not Gas Town adoption. Gas Town is the upgrade path for multi-project.
 
 ### Research completed
 
+- [Competitive landscape](research/competitive-landscape.md) — Direct and
+  adjacent competitors. Key finding: within-session orchestration is crowded,
+  cross-session constraint persistence is unoccupied.
 - [Ecosystem analysis](research/ecosystem.md) — OMC, clawhip, OmO, and the
   broader landscape.
 - [Challenges](research/challenges.md) — Near-certain and likely problems
@@ -39,6 +44,13 @@ We are defining what to build. No implementation has started.
   autonomous iterative auditing with diminishing returns detection.
 - [Cross-session daemon](research/cross-session-daemon.md) — Analysis of
   whether/how to orchestrate across session boundaries.
+- [Real-world validation](research/real-world-validation.md) — Bug taxonomy
+  from a multi-session autonomous build. Validates challenges, informs tool
+  placement.
+- [Gas Town analysis](research/gas-town-analysis.md) — Deep comparison with
+  Gas Town fleet manager. Lessons learned, future integration path.
+- [Competitive landscape](research/competitive-landscape.md) — Direct and
+  adjacent competitors. Cross-session constraint persistence is unoccupied.
 
 ---
 
@@ -79,28 +91,41 @@ Key concerns:
 Autonomous build with parallel agents working from the design artifacts.
 
 Input: design artifacts and contract files from step 2.  
-Output: working code in branches/worktrees, with per-component tests.
+Output: working code in branches/worktrees, with per-component and
+per-connection integration tests.
 
 Key concerns:
 - Agents read contract files, not conversation context
 - Parallel agents in worktrees — semantic consistency enforced by contracts
 - Context persistence: checkpoint files written at phase boundaries so
   sessions can resume after rate limits/crashes
+- Cross-component constraints persisted to files (not just API contracts —
+  also operational invariants like "tool X requires allowlist entry in Y")
 - Per-agent quality: review pipeline (verify, code-review, security-review)
+- **Pre-phase investigation gate:** before each phase, investigate existing
+  codebase for constraints that affect new work (Clippy principle)
+- **Data-flow boundary trace:** before implementing cross-component
+  connections, read both producing and consuming ends (Bildhauer principle)
+- **Per-connection integration tests:** when a cross-component connection
+  is created, write the integration test immediately — don't defer to step 4
 
 ### Step 4 — Integration
 
-Merge parallel work, resolve conflicts, run end-to-end tests.
+Merge parallel work, resolve conflicts, run full-stack end-to-end tests.
 
-Input: completed branches/worktrees from step 3.  
-Output: integrated codebase on a single branch, passing end-to-end tests.
+Input: completed branches/worktrees from step 3 (each with per-connection
+integration tests already passing).  
+Output: integrated codebase on a single branch, passing full-stack e2e tests.
 
 Key concerns:
+- Per-connection integration tests already ran during step 3 — this step
+  runs the full stack together for the first time
 - Semantic conflicts surface here (file conflicts caught by git, but
   mismatched API assumptions only caught by integration tests)
 - End-to-end tests run against the merged codebase, not individual
   worktrees
 - This is a verification gate, not "just merge"
+- Convergent audit loop runs here for cross-codebase quality assessment
 
 ### Step 5 — Validation
 
@@ -135,13 +160,33 @@ item and adjust accordingly.
 ### A — Implementation flow (product steps 3-4)
 
 The core. Making "here's a task, build it autonomously" work with OMC +
-our mitigations.
+our mitigations. **Spec draft:** [automation-flow](specs/automation-flow.md).
+
+Architecture: three components.
+- **On-disk state** (task graph, checkpoints, constraints) — the real
+  system. Survives sessions, crashes, rate limits. YAML files.
+- **Session skill** — SKILL.md prompt template. Reads state, picks next
+  unit, invokes OMC (ralph for single units, team for parallel groups),
+  writes checkpoints.
+- **Session loop** — bash script (~30 lines). Spawns tmux sessions with
+  claude, polls for session death, checks state, loops. MVP: human
+  replaces this.
+
+Build order:
+1. constraints.yaml schema (highest proven value — prevents session-boundary bugs)
+2. State format (task graph, checkpoints, state.yaml)
+3. Session skill (SKILL.md — core execution logic)
+4. Task decomposer (SKILL.md — design artifacts → task graph)
+5. Session loop (bash script)
+6. Telegram sink for clawhip (Rust — extend our fork with Telegram bot
+   API support for build progress notifications)
 
 Includes:
 - Context persistence across compaction and sessions
 - Contract coordination for parallel agents
 - Cross-session continuity (checkpoints, resumption)
-- Integration testing across components
+- Integration testing per-connection during implementation
+- Pre-phase investigation gates (Bildhauer/Clippy principles)
 - See [challenges](research/challenges.md) for full list
 
 ### B — Design flow (product steps 1-2)
@@ -163,10 +208,14 @@ implementation input. The handoff, the seams. TBD as we work on A and B.
 
 Technical improvements and additional features:
 - Cost tracking and budget enforcement
-- Cross-backend routing (Claude → Codex for cost-sensitive work)
+- Cross-backend routing (Claude -> Codex for cost-sensitive work)
 - Ideas from OmO's patterns (category-based delegation, multi-model
   fallback chains)
-- Bildhauer/Clippy integration into the orchestration pipeline
+- ~~Telegram sink for clawhip~~ — moved to item A build order
+- **Moved to A:** Bildhauer/Clippy principles are now part of the
+  implementation flow (step 3 pre-phase gates), not a separate extension.
+  External plugin integration remains a noted alternative if built-in
+  approach proves insufficient.
 - See [quality comparison](research/quality-comparison.md)
 
 ### E — Packaging, validation, and distribution
@@ -176,12 +225,34 @@ Technical improvements and additional features:
 - Documentation for users
 - Community feedback and iteration
 
-**Cross-impact note:** Changes to any item may affect others. In particular:
-- Changes to A (implementation) may reveal requirements for B (design) —
-  "implementation needs X as input, so design must produce X"
-- Changes to B (design) may change what A expects as input
-- Changes to D (extensions) may require adjustments to A or B
-- Always check adjacent items when modifying one
+**Dependency chain:**
+
+```
+B (design) ──produces──► A (implementation) ──produces──► Steps 4-5
+                              │
+                              ├── constraints.yaml ◄── feeds back to B
+                              ├── session loop + Telegram ◄── D extends
+                              └── all of it ◄── E packages
+```
+
+- **A is the foundation.** Everything else plugs into it.
+- **B feeds A.** B produces the design artifacts (DESIGN.md, STACK.md,
+  contracts/) that A's decomposer consumes. B must produce artifacts
+  matching A's required input format (see spec, resolved question 4).
+- **A feeds back to B.** constraints.yaml discovered during implementation
+  can reveal design problems — "this constraint means the design needs
+  to change." Iteration (step 6) routes back through B.
+- **C is discovered, not built.** The gap between B's output and A's input
+  is found by testing A+B together. C resolves as we validate the handoff.
+- **D extends A.** Cost tracking hooks into the session loop (budget per
+  session/unit). Cross-backend routing extends the session skill's unit
+  dispatch. OmO patterns extend OMC invocation.
+- **E wraps everything.** End-to-end validation runs the full A+B pipeline
+  on a real project. Packaging bundles skills, conventions, session loop,
+  clawhip config (including Telegram sink).
+
+**Cross-impact note:** Changes to any item may affect others. Always check
+adjacent items when modifying one.
 
 ---
 
@@ -191,23 +262,32 @@ Technical improvements and additional features:
   parallel agents, review pipeline, recovery. Covers ~85% of the autonomous
   development flow.
 - **clawhip** — Event routing and notifications. Monitors sessions, routes
-  to Discord/Slack.
+  to Discord/Slack/Telegram (Telegram sink to be added to our fork).
 - **Claude Code** — The runtime. All integration through public consumer
   interface (hooks, MCP, skills, CLAUDE.md, Agent tool, SendMessage, Tasks).
 
 ## Open questions
 
-1. What form does context persistence take? Skills that enforce writing
-   design docs? A project template? Modifications to OMC's pipeline stages?
+1. ~~Context persistence form?~~ **Resolved:** YAML files on disk
+   (constraints.yaml, task-graph.yaml, checkpoints/, state.yaml).
+   Session skill (SKILL.md) reads and writes them. See
+   [automation-flow spec](specs/automation-flow.md).
 
-2. How do we handle cross-session continuity? A daemon that manages session
-   lifecycle? Structured checkpoint files that a new session reads? Both?
+2. ~~Cross-session continuity?~~ **Resolved:** Bash session loop (~30
+   lines) spawns tmux sessions, polls for death, checks state, loops.
+   No daemon. MVP: human restarts manually. See
+   [automation-flow spec](specs/automation-flow.md) and ADR-005.
 
-3. Where do Bildhauer/Clippy integrate — as OMC pipeline stages, as
-   enhanced agent definitions, or as separate plugins?
+3. ~~Where do Bildhauer/Clippy integrate?~~ **Resolved:** Absorb their
+   principles into our own pipeline, not as external plugins. Pre-phase
+   investigation gate (Clippy principle) and data-flow boundary trace
+   (Bildhauer principle) built into step 3. External plugin integration
+   remains a noted alternative. See [real-world validation](research/real-world-validation.md)
+   and [quality comparison](research/quality-comparison.md).
 
 4. Should we add cost tracking and cross-backend routing (Claude → Codex)?
-   Deferred until core flow works, but remains a genuine ecosystem gap.
+   Deferred until core flow works (roadmap item D), but remains a genuine
+   ecosystem gap.
 
 ## Repository structure
 

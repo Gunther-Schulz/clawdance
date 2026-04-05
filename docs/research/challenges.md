@@ -59,12 +59,23 @@ Agent B's frontend tests pass with mocked API responses. Merge them and the
 app is broken because the mock doesn't match the real API. Nobody ran
 end-to-end tests against the integrated codebase.
 
-### Resuming after interruption loses velocity
+### Session boundaries cause integration bugs (not just velocity loss)
 
 Whether it's a rate limit, a crash, or closing your laptop — the next
 session starts cold. Even with `.omc/` state and project memory, the agent
 spends the first 10-15 minutes re-reading files and rebuilding context that
 the previous session already had.
+
+But velocity loss is the minor problem. The major problem is **correctness**.
+When a session establishes a cross-component constraint (e.g., "every new
+MCP tool must be added to the allowlist in config.go"), that constraint
+dies at the session boundary. The next session doesn't know about it,
+builds something that violates it, and the bug is only caught when
+integration tests run — if they exist.
+
+This was validated in a real multi-session build where 2 of 5 bugs were
+caused by cross-component constraints that weren't persisted to files.
+See [real-world validation](real-world-validation.md).
 
 ## Likely challenges
 
@@ -101,11 +112,11 @@ Files are permanent.
 | Compaction losing decisions | Write design decisions to DESIGN.md on disk early. Agents read files instead of relying on conversation context |
 | Semantic conflicts between parallel agents | Define contracts (API schemas, data models) as actual files BEFORE spawning parallel workers. Agents read the contract file |
 | Agent context dilution | Project-specific constraints go in CLAUDE.md or a constraints file, not just conversation |
-| Integration test gap | Mandatory post-merge integration test phase against the merged codebase, not individual worktrees |
+| Integration test gap | Integration tests written per-connection during implementation, plus full-stack test after merge. Not deferred to a separate phase |
 | Scope creep | Constrain the initial prompt with explicit MVP scope. Write scope document to disk for agents to reference |
 | Recovery token burn | Lower retry limits, enforce "if same error 2x, stop and write a blocker report" |
 | Tech stack drift | STACK.md or project config that agents check before introducing dependencies |
-| Resume velocity loss | Structured checkpoint files that capture what's done, what's in progress, what's next |
+| Session boundary correctness | Persist cross-component constraints to files (not just design decisions — also operational invariants like "tool X requires allowlist entry in file Y"). Structured checkpoints for resumption |
 
 ## Key insight
 
@@ -114,6 +125,8 @@ be a structured set of project files and skills that ensure critical context
 is always on disk — surviving compaction, session boundaries, and rate limit
 interruptions.
 
-This aligns with Bildhauer's philosophy (externalize reasoning into
-artifacts) and Clippy's approach (evidence must be traceable, not just
-remembered).
+This aligns with the principles from Bildhauer (externalize reasoning into
+artifacts) and Clippy (evidence must be traceable, not just remembered).
+These principles should be built into the development process itself, not
+bolted on as external tools. See [real-world validation](real-world-validation.md)
+for concrete evidence of which principles catch which bug categories.
