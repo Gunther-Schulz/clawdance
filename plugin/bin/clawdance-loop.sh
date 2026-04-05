@@ -41,6 +41,10 @@ while true; do
   failures=$(yq -r '.consecutive_failures // 0' "$STATE_FILE")
 
   case "$status" in
+    pending)
+      notify "Build not started yet (status: pending). Run /clawdance interactively to complete design and start the build."
+      exit 3
+      ;;
     completed)
       notify "Build completed."
       exit 0

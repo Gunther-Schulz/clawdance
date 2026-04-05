@@ -148,7 +148,9 @@ decomposition."
 - **One focus per invocation.** Don't try to do everything at once. The
   orchestrator calls you multiple times.
 - **Read before writing.** Always read existing artifacts first. Build on
-  what's there, don't contradict it.
+  what's there, don't contradict it. Analyze mode produces the baseline.
+  Subsequent passes AMEND existing artifacts — add new components,
+  update contracts — don't replace the whole document.
 - **Recommendation-first.** Present your design with reasoning. The user
   approves or redirects.
 - **Write to disk.** Every decision goes into a design artifact. The
