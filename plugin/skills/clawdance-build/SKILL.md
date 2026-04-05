@@ -90,15 +90,47 @@ skill for checkpointing.
 
 ### 6. Post-unit
 
-a) **Write checkpoint** `.clawdance/checkpoints/unit-NNN.yaml` — all
-   required fields.
-b) **Validate:** re-read checkpoint, verify fields.
+a) **Write checkpoint** `.clawdance/checkpoints/unit-NNN.yaml` with
+   these exact fields:
+   ```yaml
+   unit_id: unit-NNN
+   status: completed          # completed | failed | partial
+   completed_at: ISO-8601
+   session_id: "..."
+   tests_passing: true
+   new_constraints: []        # constraints discovered during this unit
+   notes: "..."
+   ```
+
+b) **Validate:** re-read checkpoint, verify fields present.
+
 c) **Mine progress.txt:** read `.omc/progress.txt` for constraint
-   discoveries. Deduplicate by description.
-d) **Constraint review:** read constraints.yaml. Any existing constraints
-   affected by this work? New cross-component invariants? Add with
-   `discovered_by: unit_review`. For parallel groups, write to
-   checkpoint `new_constraints` instead.
+   discoveries. Deduplicate by description against constraints.yaml.
+
+d) **Constraint review:** read `.clawdance/constraints.yaml`. Any existing
+   constraints affected by this work? New cross-component invariants?
+   
+   New constraints use this exact format:
+   ```yaml
+   - id: c-NNN              # next available ID
+     description: "..."     # NOT "rule" — use "description"
+     affects: [component-a]
+     added_by: unit-NNN
+     discovered_by: unit_review  # unit_review | integration_test
+     confidence: verified        # NOT "specified" — use "verified"
+     created_at: YYYY-MM-DD
+   ```
+   
+   Write new constraints DIRECTLY to `.clawdance/constraints.yaml` (not
+   just to the checkpoint). The checkpoint's `new_constraints` field is
+   a record of what was found, but constraints.yaml is the authoritative
+   file that future units read. If you found constraints and wrote them
+   to the checkpoint but not to constraints.yaml, they are invisible to
+   the next unit.
+   
+   For parallel groups only: write to checkpoint `new_constraints` instead
+   (merged by orchestrator after all parallel units complete).
+
 e) **Update state.yaml:** move unit to completed (or failed), reset
    `consecutive_failures` to 0. Validate after write.
 
@@ -115,6 +147,31 @@ If no units remain in `units_remaining`:
    `discovered_by: integration_test`. Mark relevant unit failed, move
    to remaining. Report to orchestrator.
 3. If tests pass: set state.yaml `status: completed`. Report done.
+
+## Transparency
+
+Before invoking ralph, report to the user:
+```
+Building unit-NNN (name).
+  Contracts: [list of contract files being read]
+  Constraints: N active ([brief list of relevant ones])
+  Mode: ralph [--no-prd if applicable]
+```
+
+After ralph completes and checkpoint is written, report:
+```
+Unit-NNN complete.
+  Files created: [list]
+  Tests: [pass/fail]
+  New constraints: [count] ([brief description if any])
+  Progress: N/M units done. Next: unit-NNN (name) [or "all complete"]
+```
+
+On constraint discovery, call it out explicitly:
+```
+New constraint: c-NNN "description"
+  Added to constraints.yaml (discovered_by: unit_review)
+```
 
 ## Principles
 

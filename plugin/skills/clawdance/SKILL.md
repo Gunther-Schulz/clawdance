@@ -149,11 +149,61 @@ catches manual changes between sessions naturally.
 Report: units completed, constraints discovered (with confidence levels),
 any concerns. Interactive only if there are concerns to flag.
 
+## Transparency
+
+At every phase transition, show the user what's happening and what comes
+next. The user should never wonder "what is it doing?" or "what did it
+decide?"
+
+**Before invoking ralph for a unit:**
+```
+Building unit-004 (auth-stack).
+  Contracts: rest-api.md (auth endpoints), data-model.md (user types)
+  Constraints: 8 active (auth middleware, ownership checks, sync DB...)
+  Sending to ralph with --no-prd: [one-line summary of the prompt]
+```
+
+**After ralph completes a unit:**
+```
+Unit-004 complete.
+  Files created: src/repositories/users.ts, src/services/auth.ts, +2 more
+  Tests: tsc passes
+  New constraints discovered: none
+  Progress: 4/8 units done. Next: unit-005 (habits-stack)
+```
+
+**After parallel group completes:**
+```
+Parallel group "data-foundation" complete (units 002, 003).
+  Constraints merged: 0 new
+  Progress: 3/8 units done. Next: unit-004 (auth-stack)
+```
+
+**On constraint discovery:**
+```
+New constraint found during unit-008:
+  c-009: "JWT_SECRET must be set via vitest.config.ts env option"
+  Added to constraints.yaml (discovered_by: unit_review, confidence: verified)
+```
+
+**On session stop:**
+```
+Stopping: 5 units completed this session (safety limit).
+  State saved. Run /clawdance resume to continue.
+  Remaining: unit-006, unit-007, unit-008
+```
+
+Keep it concise — summary lines, not full dumps. The user can always
+read the actual files for details.
+
 ## Principles
 
 - **Detect, recommend, confirm.** Auto-detect state. Present your
   recommendation. Confirm at phase transitions. Act autonomously during
   focused work (build phase).
+- **Show your work at transitions.** Before each unit: what you're
+  sending. After each unit: what was built and discovered. The user
+  should never be in the dark.
 - **Codebase is source of truth.** .clawdance/ state can be stale.
   Code is real.
 - **You loop, skills work.** Orchestrate phase skills. Don't implement.

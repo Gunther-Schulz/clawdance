@@ -54,8 +54,20 @@ depends_on, contracts_read, contracts_produced, parallel_group).
 **state.yaml** — status: pending, all units in units_remaining.
 
 **constraints.yaml** — seed with design-phase constraints if visible
-(things like "all services must use the same auth scheme"). Use
-`discovered_by: design`.
+(things like "all services must use the same auth scheme"). Use this
+exact format:
+```yaml
+version: 1
+constraints:
+  - id: c-001
+    description: "..."        # NOT "rule" — always use "description"
+    affects: [component-a]
+    added_by: design
+    discovered_by: design
+    confidence: inferred       # NOT "specified" — use "inferred" for
+                               # design-phase, "verified" after build
+    created_at: YYYY-MM-DD
+```
 
 **checkpoints/** — empty directory.
 
