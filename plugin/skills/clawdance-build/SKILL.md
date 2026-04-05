@@ -61,9 +61,23 @@ Implement [unit name]: [unit description]
 
 ### 5. Execute
 
+**ALWAYS use ralph.** Never delegate directly to executor agents or other
+OMC skills. Ralph is the only execution path verified to return control
+to this skill for post-unit checkpointing. Direct agent invocation may
+cause the session to end without writing checkpoints.
+
+For trivial units (scaffolding, config), use `--no-prd` to skip the PRD
+ceremony: `ralph --no-prd <prompt>`. Still goes through ralph's loop but
+without story tracking overhead.
+
 **Single unit:**
 ```
 Skill(skill="oh-my-claudecode:ralph", args="<prompt>")
+```
+
+**Small/trivial unit:**
+```
+Skill(skill="oh-my-claudecode:ralph", args="--no-prd <prompt>")
 ```
 
 **Parallel group (orchestrator handles team invocation):**
@@ -71,7 +85,8 @@ Skill(skill="oh-my-claudecode:ralph", args="<prompt>")
 Skill(skill="oh-my-claudecode:team", args="N:executor <prompts>")
 ```
 
-Wait for completion. Ralph exits via /cancel, control returns.
+Wait for completion. Ralph exits via /cancel, control returns to this
+skill for checkpointing.
 
 ### 6. Post-unit
 
