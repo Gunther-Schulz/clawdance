@@ -82,12 +82,22 @@ off after consecutive unproductive sessions.
 
 ## How it works
 
-clawdance is state-driven. It detects what exists and enters the right
-phase:
+clawdance uses an orchestrator + phase skills architecture:
+
+```
+/clawdance "Build me X"
+  → Orchestrator detects state, invokes phase skills:
+    → Design skill (iterative: architecture → stack → contracts → validate)
+    → Decompose skill (design → task graph)
+    → Build skill (one unit per invocation, called repeatedly)
+```
+
+Each phase skill gets a fresh context per invocation. The orchestrator
+manages the loop and transitions. State-driven:
 
 | State | Phase |
 |---|---|
-| No design, no build state | Design — clarify idea, produce artifacts |
+| No design, no build state | Design — iterative, increasing resolution |
 | Design exists, no build state | Decompose — design → task graph |
 | Task graph pending | Review task graph, start building |
 | Build in progress | Resume from last checkpoint |

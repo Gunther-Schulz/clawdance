@@ -73,7 +73,37 @@ The session loop keeps all four running across session boundaries. That's
 clawdance's value: not any one element, but the orchestration of all four,
 persisted across sessions.
 
-## Architecture: Three components
+## Skill architecture: Orchestrator + phase skills
+
+The user interacts with one command: `/clawdance`. The orchestrator skill
+detects state and invokes focused phase skills:
+
+```
+/clawdance "Build me X"
+  │
+  ▼
+Orchestrator (clawdance/SKILL.md) — reads state, manages transitions
+  │
+  ├─► clawdance-design — one aspect per invocation (architecture,
+  │     stack, contracts, validate). Called iteratively at increasing
+  │     resolution. Writes to design/.
+  │
+  ├─► clawdance-decompose — design/ → .clawdance/ (task graph, state).
+  │     Called once after design is complete.
+  │
+  └─► clawdance-build — one unit per invocation. Delegates to OMC
+        (ralph/team). Called repeatedly by orchestrator. Writes
+        checkpoints, discovers constraints.
+```
+
+Each phase skill invocation gets a fresh context. Design pass 1 doesn't
+clutter pass 2. Unit-001's build doesn't clutter unit-002. The
+orchestrator manages controlled context boundaries.
+
+This follows OMC's own pattern — autopilot orchestrates ralph, team, and
+other skills.
+
+## Infrastructure: Three components
 
 ```
 ┌─────────────────────────────────────────┐
