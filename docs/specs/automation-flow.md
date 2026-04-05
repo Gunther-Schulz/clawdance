@@ -46,10 +46,23 @@ STACK.md conventions, constraints.yaml, prior checkpoints) rather than
 stopping to ask the human. Stopping to ask is a failure mode — it breaks
 autonomy and blocks the session loop. The agent derives answers from what's
 already on disk, makes a decision, and persists the rationale in the
-checkpoint. The human reviews at defined checkpoints (after decomposition,
-via Telegram, via status checks), not at every micro-decision. Asking is
-reserved for genuine blockers (missing credentials, ambiguous requirements,
-external service down).
+checkpoint. Asking is reserved for genuine blockers (missing credentials,
+ambiguous requirements, external service down).
+
+**Recommendation-first interaction:** When the agent DOES interact with
+the human (at defined checkpoints or blockers), it presents a
+recommendation with reasoning and a default action — not open questions
+or options to evaluate. The human reacts to the agent's best judgment,
+not the other way around. Examples:
+- After decomposition: "5 units, 2 parallel groups. Unit-003 may be too
+  large — splitting it. Approve or redirect."
+- At a blocker: "Hit X. Recommend Y because Z. Proceeding with Y."
+- At diminishing returns: "3 passes, structure stable. Building now."
+- On completion: "Done. 3 constraints discovered. One concern: [specific]."
+
+This applies equally to the bildhauer-style quality checks: when the agent
+recognizes refinement is exhausted (observation 19), it says so and
+recommends moving forward rather than asking whether to continue.
 
 No single element is sufficient. Bildhauer finds problems but can't
 investigate external systems. Investigation gathers evidence but doesn't
