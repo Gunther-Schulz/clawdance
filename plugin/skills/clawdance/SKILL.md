@@ -1,14 +1,14 @@
 ---
 name: clawdance
-description: Autonomous app development orchestrator. State-driven — detects what exists and invokes the right phase skill. Single entry point for design, decomposition, and build. Handles new projects and existing codebases.
+description: Autonomous app development orchestrator. Detects project state, recommends next action, confirms with user at phase transitions. Single entry point for design, decomposition, and build.
 argument-hint: "<idea or task> | resume | status | rollback unit-NNN"
 ---
 
 # clawdance — Orchestrator
 
-You are the orchestration loop. You detect state, invoke phase skills,
-and manage transitions between phases. You do NOT do the work yourself —
-you delegate to focused phase skills and check results.
+You are the orchestration loop. You detect state, recommend actions,
+confirm with the user at phase transitions, and invoke focused phase
+skills. You do NOT do the work yourself — you delegate.
 
 All clawdance state lives under `.clawdance/` — one hidden directory,
 clean project root.
@@ -21,179 +21,135 @@ clean project root.
 │   └── contracts/
 ├── task-graph.yaml
 ├── state.yaml
-├��─ constraints.yaml
-└── checkpoints/
+├── constraints.yaml
+├── checkpoints/
+└── history/            # Archived state from previous build cycles
 ```
 
 ## Commands
 
-- **"Build me X"** / **"Add feature X"** (default): Start from whatever
-  phase is needed.
-- **resume**: Continue from where the last session left off.
+- **"Build me X"** / **"Add feature X"** (default): Detect state,
+  recommend action, confirm, proceed.
+- **resume**: Continue building from where the last session left off.
+  No confirmation needed — intent is unambiguous.
 - **status**: Read-only progress report. Do not start or modify anything.
-- **rollback unit-NNN**: Delete `.clawdance/checkpoints/unit-NNN.yaml`,
-  move unit from completed to remaining in state.yaml, reset
-  consecutive_failures to 0.
+- **rollback unit-NNN**: Delete checkpoint, move unit back to remaining,
+  reset consecutive_failures to 0.
 
 ## Orchestration Loop
 
 ### 0. Check prerequisites
 
-On first invocation, verify:
-- **OMC loaded:** Check if `oh-my-claudecode` skills are available (try
-  to detect OMC's CLAUDE.md content, `.omc/` directory, or known OMC
-  skills). If not found:
-  "OMC plugin not detected. Install it first:
-    /plugin marketplace add Yeachan-Heo/oh-my-claudecode
-    /plugin install oh-my-claudecode@oh-my-claudecode
-    /reload-plugins"
-  Stop.
+On first invocation, verify OMC is loaded (check for `.omc/`, OMC
+CLAUDE.md content, or known OMC skills). If not found, report install
+instructions and stop. Check once per session.
 
-Only check once per session.
+### 1. Validate state
 
-### 1. Detect state
+If `.clawdance/` exists, validate before making decisions:
+- `state.yaml`: has `version` field, valid `status` value, valid YAML
+- `constraints.yaml`: valid YAML with `version` field
+- `task-graph.yaml`: valid YAML, `units` is a list
 
-Read the project to determine the mode and phase.
+If corrupted: report what's wrong, suggest fix. Don't guess, don't crash.
 
-**First: validate .clawdance/ if it exists.** Check that state files are
-well-formed before making decisions based on them:
-- If `state.yaml` exists: verify it has a `version` field and a valid
-  `status` value. If malformed, report what's wrong and suggest: "Delete
-  .clawdance/state.yaml and re-run, or fix manually." Don't guess.
-- If `constraints.yaml` exists: verify it parses as valid YAML with a
-  `version` field. If corrupted, report and suggest repair.
-- If `task-graph.yaml` exists: verify `version` field and that `units`
-  is a list. If malformed, report.
+### 2. Detect and recommend
 
-**Mode detection:**
+Read project state. Present what you see and recommend the next action.
+**Confirm with the user at non-obvious decisions. Act without confirming
+when intent is unambiguous.**
 
-| Codebase | .clawdance/ | User provided task? | Mode |
-|---|---|---|---|
-| No source files | Does not exist | Yes | **New build** — start from scratch |
-| Source files exist | Does not exist | Yes | **Init existing** — analyze codebase first |
-| Any | Exists, status: completed | Yes | **New cycle** — archive old state, start new build |
-| Any | Exists, status: in_progress | Yes | **New task** — confirm: abandon current or start new? |
-| Any | Exists | No (resume) | **Resume** — continue from current state |
+**No .clawdance/, no source code, user provided a task:**
+"Empty project. I'll design [task] from scratch."
+→ Interactive: confirm, then invoke design skill.
 
-"Source files exist" = the project has code beyond just `.clawdance/`
-(e.g., src/, package.json, go.mod, *.py, etc.).
+**No .clawdance/, source code exists, user provided a task:**
+"I see an existing [language/framework] project. I'll analyze the
+codebase first, then design [task]."
+→ Interactive: confirm, then invoke design skill in analyze mode.
 
-**New cycle handling (completed + new task):**
-Previous build finished. The user wants to build something new.
-- Preserve `.clawdance/constraints.yaml` (codebase knowledge, not
-  build-scoped)
-- Move old `task-graph.yaml`, `state.yaml`, and `checkpoints/` to
-  `.clawdance/history/<timestamp>/`
-- Proceed with design phase for the new task
-- Design artifacts in `.clawdance/design/` may need updating (amend for
-  new feature, don't replace)
+**No .clawdance/, source code exists, no task provided:**
+"I see an existing project but no task. What would you like to build
+or change?"
+→ Interactive: wait for user input.
 
-**New task handling (in_progress + new task):**
-Build is underway but user provided a different task. Confirm:
-"There's a build in progress (N/M units complete). Abandon it and start
-[new task], or continue the current build?" If abandon: archive current
-state to history/, start new cycle. If continue: ignore the new task
-description, resume building.
+**.clawdance/ exists, status: completed, user provided a new task:**
+"Previous build completed. Starting new build cycle for [task].
+Preserving constraints from the previous build."
+→ Interactive: confirm, then archive old state to `.clawdance/history/`,
+  proceed with design for new task.
 
-**Phase detection (when resuming, no new task):**
+**.clawdance/ exists, status: in_progress, user said "resume":**
+→ Autonomous: no confirmation needed. Read state, invoke build skill.
 
-| State | Phase | Action |
-|---|---|---|
-| No `.clawdance/design/DESIGN.md` | Design needed | Invoke design skill |
-| Design incomplete (missing STACK.md or contracts/) | Design incomplete | Invoke design skill with focus on gaps |
-| Design complete, no `task-graph.yaml` | Ready to decompose | Invoke decompose skill |
-| `state.yaml` `status: pending` | Ready to build | Confirmation, then invoke build skill |
-| `state.yaml` `status: in_progress` | Building | Invoke build skill |
-| `state.yaml` `status: completed` | Done | Report completion summary |
-| `state.yaml` `status: failed` | Failed | Report failure, suggest next steps |
+**.clawdance/ exists, status: in_progress, user provided a task:**
+"Build in progress (N/M units complete). Continuing current build.
+If you meant to start a new task, say 'start over'."
+→ Autonomous: continue building. User redirects if wrong.
 
-"Complete design" means: DESIGN.md exists, STACK.md exists, contracts/
-has at least one file, and DESIGN.md references components that all have
-corresponding contracts.
+**.clawdance/ exists, status: pending:**
+→ Present task graph for confirmation, then invoke build skill.
 
-### 2. Init existing project (if applicable)
+**.clawdance/ exists, status: failed:**
+→ Report failure details, suggest next steps (rollback, retry, redesign).
 
-When source files exist but no `.clawdance/`:
-
-a) Create `.clawdance/` directory
-b) Invoke the design skill in **analyze mode** — it reads the existing
-   codebase and produces `.clawdance/design/` artifacts describing what
-   EXISTS (architecture, stack, interfaces). This is reverse-engineering,
-   not design from scratch.
-c) Invoke the design skill to seed `.clawdance/constraints.yaml` from
-   discovered codebase patterns. These get `discovered_by: init` and
-   `confidence: inferred`.
-d) Human checkpoint: "Here's what I see in this codebase. [summary].
-   Correct or redirect."
-e) Then ask: "What do you want to change/add?" The user's answer becomes
-   the scope for the design phase — designing the CHANGE, not the whole
-   system.
+**.clawdance/ exists, design incomplete:**
+→ Invoke design skill to fill gaps.
 
 ### 3. Design phase (iterative)
 
-The design skill handles ONE ASPECT per invocation. Call it multiple times
-at increasing resolution:
+Invoke the design skill multiple times at increasing resolution.
 
 **For new projects:**
-- Pass 1 — Architecture: user's idea → DESIGN.md (interactive)
-- Pass 2 — Stack: DESIGN.md → STACK.md (autonomous)
-- Pass 3+ — Contracts: one per inter-component interface (autonomous)
-- Validation pass: coherence check across all artifacts (autonomous)
+- Architecture: user's idea → DESIGN.md (interactive — user confirms)
+- Stack: DESIGN.md → STACK.md (autonomous)
+- Contracts: one per interface (autonomous)
+- Validation: coherence check (autonomous)
 
 **For existing projects:**
-- Init already produced design artifacts from the codebase
-- Design the CHANGE: which components touched, what's new, updated
-  contracts for affected interfaces
-- New contracts only for new interfaces
-
-After design is complete, proceed to decomposition.
+- Analyze mode produced the baseline (from step 2)
+- Design the CHANGE: which components touched, what's new (interactive
+  — user confirms scope)
+- Updated/new contracts for affected interfaces (autonomous)
 
 ### 4. Decompose phase
 
-Invoke the decompose skill. It reads `.clawdance/design/`, produces
-task-graph.yaml and state.yaml.
+Invoke the decompose skill. Present the task graph:
+"Here's the build plan: N units, M parallel groups. [summary]. Go?"
+→ Interactive: user confirms or adjusts.
 
-Confirmation: "Here's the build plan: N units, M parallel groups.
-[summary]. Go?"
+### 5. Build phase (iterative, autonomous)
 
-### 5. Build phase (iterative)
-
-The build skill handles ONE UNIT (or one parallel group) per invocation.
-The orchestrator calls it repeatedly:
+The build skill handles ONE UNIT per invocation. The orchestrator calls
+it repeatedly. This is the autonomous core — no confirmation per unit.
 
 - Read state.yaml → pick next unit(s)
-- Invoke build skill with the unit context
-- Build skill executes via ralph/team, writes checkpoint
+- Invoke build skill
 - Check: more units? Context room left? Invoke again or stop.
 
-Between invocations: check for stop signals (compact-signal, unit count),
-merge constraints from parallel groups, verify state consistency.
+Between invocations: check stop signals, merge parallel constraints,
+sweep check.
 
-The pre-phase investigation gate (read contracts + constraints before each
-unit) handles codebase drift naturally — if the user made manual changes
-between sessions, the fresh read catches them. No special reconciliation
-needed.
-
-When all units complete: build skill runs full-stack integration tests.
+Pre-phase investigation gate reads actual code before each unit —
+catches manual changes between sessions naturally.
 
 ### 6. Completion
 
 Report: units completed, constraints discovered (with confidence levels),
-any concerns. state.yaml → completed.
+any concerns. Interactive only if there are concerns to flag.
 
 ## Principles
 
-- **Codebase is always source of truth.** `.clawdance/` state can be
-  stale. Code is real. The pre-phase investigation gate reads the actual
-  code before each unit.
-- **You loop, skills work.** You manage state and transitions. Phase
-  skills do focused work per invocation.
-- **Each invocation gets fresh context.** Design pass 1 doesn't clutter
-  pass 2. Unit-001's build doesn't clutter unit-002.
-- **Self-resolve from context.** Derive answers from the codebase,
-  constraints, checkpoints. Don't ask the human for things you can
-  figure out.
-- **Recommendation-first.** At human checkpoints: present your
-  recommendation with reasoning. The human reacts, not evaluates.
-- **Persist everything.** Design artifacts, state, constraints — files
-  survive, conversations don't.
+- **Detect, recommend, confirm.** Auto-detect state. Present your
+  recommendation. Confirm at phase transitions. Act autonomously during
+  focused work (build phase).
+- **Codebase is source of truth.** .clawdance/ state can be stale.
+  Code is real.
+- **You loop, skills work.** Orchestrate phase skills. Don't implement.
+- **Each invocation gets fresh context.** Controlled context boundaries.
+- **Self-resolve during autonomous phases.** During build, derive answers
+  from codebase, constraints, checkpoints. Don't interrupt the user for
+  things you can figure out.
+- **Recommendation-first at interactive phases.** Present judgment with
+  reasoning. The user reacts, not evaluates.
+- **Persist everything.** Files survive, conversations don't.
