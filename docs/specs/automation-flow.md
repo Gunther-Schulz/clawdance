@@ -40,6 +40,17 @@ human redirects → investigate new direction → persist →
 find confirms stable → move forward
 ```
 
+**Self-resolution principle:** During autonomous execution, the agent must
+resolve practical questions using available context (codebase patterns,
+STACK.md conventions, constraints.yaml, prior checkpoints) rather than
+stopping to ask the human. Stopping to ask is a failure mode — it breaks
+autonomy and blocks the session loop. The agent derives answers from what's
+already on disk, makes a decision, and persists the rationale in the
+checkpoint. The human reviews at defined checkpoints (after decomposition,
+via Telegram, via status checks), not at every micro-decision. Asking is
+reserved for genuine blockers (missing credentials, ambiguous requirements,
+external service down).
+
 No single element is sufficient. Bildhauer finds problems but can't
 investigate external systems. Investigation gathers evidence but doesn't
 check structural coherence. Persistence preserves state but doesn't

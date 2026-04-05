@@ -58,6 +58,22 @@ The user provided redirections that none of the other three could derive:
 
 ## Key observations
 
+### Self-resolution is critical for autonomy
+
+During the session, practical questions arose (directory structure,
+installation mechanism, where code lives). These were resolvable from
+context — existing patterns in bildhauer/clippy, project conventions,
+codebase structure. Initially these were presented as questions to the
+user. The user redirected: "resolve these yourself."
+
+This is a design principle for the automation: during autonomous execution,
+the agent must derive answers from available context rather than stopping
+to ask. Stopping breaks the session loop and blocks autonomy. The agent
+reads codebase patterns, STACK.md, constraints.yaml, prior checkpoints,
+makes a decision, and persists the rationale. The human reviews at defined
+checkpoints, not at every micro-decision. Asking is reserved for genuine
+blockers only.
+
 ### The loop catches whatever is project-relevant
 
 We observed: over-engineering (daemon → bash), missing ecosystem knowledge
