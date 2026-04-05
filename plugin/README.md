@@ -19,51 +19,25 @@ cd clawdance
 ./update-plugin.sh
 ```
 
-Then in Claude Code: `/reload-plugins`
-
-### PreCompact hook
-
-Add to your Claude Code `settings.json` (or the project's
-`.claude/settings.json`):
-
-```json
-{
-  "hooks": {
-    "PreCompact": [{
-      "type": "command",
-      "command": "touch .clawdance/compact-signal"
-    }]
-  }
-}
-```
-
-This lets the session skill detect when context is getting full and stop
-gracefully.
+The install script handles everything: plugin registration, installation,
+and PreCompact hook configuration. Then in Claude Code: `/reload-plugins`
 
 ## Quick start
 
-### 1. Create design artifacts
+### 1. Set up your project
 
-In your project, create a `design/` directory:
+In Claude Code, in your project directory:
 
 ```
-design/
-├── DESIGN.md      # Architecture overview, components, how they connect
-├── STACK.md       # Tech stack, frameworks, testing approach
-└── contracts/     # One file per inter-component interface
-    ├── api-auth.yaml
-    └── data-model.yaml
+/clawdance-setup
 ```
 
-`DESIGN.md` — describe the components/services/modules and how they
-connect. What depends on what.
+This creates the `design/` directory with templates and verifies
+prerequisites (OMC plugin, PreCompact hook). Then fill in:
 
-`STACK.md` — tech stack choices, how to run tests, how to run integration
-tests (docker compose, etc.).
-
-`contracts/` — one file per interface between components. Format is
-flexible (YAML, JSON, OpenAPI, markdown). Every inter-component interface
-must have a contract.
+- `design/DESIGN.md` — architecture, components, how they connect
+- `design/STACK.md` — tech stack, testing approach
+- `design/contracts/` — one file per inter-component interface
 
 ### 2. Decompose
 
@@ -123,11 +97,12 @@ off after consecutive unproductive sessions.
 
 | Command | What it does |
 |---|---|
+| `/clawdance-setup` | Set up project: create design/ templates, verify prerequisites |
+| `/clawdance-decompose [dir]` | Design artifacts → task graph |
 | `/clawdance resume` | Continue the build from where it left off |
 | `/clawdance status` | Read-only progress report |
 | `/clawdance rollback unit-NNN` | Undo a unit, reset checkpoint |
-| `/clawdance-decompose [dir]` | Design artifacts → task graph |
-| `/clawdance-build [dir]` | Decompose + build in one shot |
+| `/clawdance-build [dir]` | Decompose + build in one shot (no review step) |
 
 ## How it works
 
