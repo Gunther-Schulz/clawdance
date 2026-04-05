@@ -2,12 +2,52 @@
 
 Spec draft 2026-04-05. Revised after investigation of OMC internals, Claude
 Code CLI, and clawhip capabilities. Covers roadmap item A (implementation
-flow, product steps 3-4). Quality gates layer on top later.
+flow, product steps 3-4).
 
 ## Goal
 
 Design artifacts go in, working app comes out. Minimal human intervention.
 Sessions can die at any point and work resumes automatically.
+
+## What clawdance actually is
+
+An iterative loop of four elements, orchestrated across session boundaries:
+
+1. **Find problems** (bildhauer principles) — data-flow tracing, structural
+   alternatives, unchecked assumptions. Pre-phase investigation gates and
+   post-unit constraint reviews catch structural incoherence.
+
+2. **Resolve problems** (investigation) — read contracts, read codebase,
+   verify assumptions against real code. When a structural problem is
+   found, gather evidence to resolve it. Ralph's implementation +
+   verification cycle is the per-unit instance of this.
+
+3. **Persist what's learned** (constraint persistence) — constraints.yaml,
+   checkpoints, state.yaml. Findings survive session death, compaction,
+   and rate limits. Without this, each session re-discovers and re-debates.
+
+4. **Redirect at transitions** (human judgment) — review the task graph
+   after decomposition. Monitor progress via Telegram/status. Intervene
+   when the automation goes in the wrong direction. The human provides
+   direction that the other three can't derive.
+
+These four alternate during execution:
+
+```
+find problem → investigate → persist finding →
+find again → investigate → persist →
+human redirects → investigate new direction → persist →
+find confirms stable → move forward
+```
+
+No single element is sufficient. Bildhauer finds problems but can't
+investigate external systems. Investigation gathers evidence but doesn't
+check structural coherence. Persistence preserves state but doesn't
+improve quality. Human judgment doesn't scale but provides direction.
+
+The session loop keeps all four running across session boundaries. That's
+clawdance's value: not any one element, but the orchestration of all four,
+persisted across sessions.
 
 ## Architecture: Three components
 
@@ -250,22 +290,29 @@ pipeline — the task graph already provides decomposition. Instead:
 - **Parallel group:** `Skill(skill="oh-my-claudecode:team", args="N:executor <unit descriptions>")`
   Team mode spawns N agents in tmux panes with merge coordination.
 
-**Context injection:** The session skill reads contracts and constraints
-BEFORE invoking ralph, and inlines the relevant content into the prompt:
+**Context injection (hybrid approach):** The session skill reads contracts
+and constraints BEFORE invoking ralph. It extracts key interface
+definitions from each contract (not the full file) and inlines those along
+with file paths for full reference. This keeps the ralph prompt focused
+while ensuring contracts are visible:
 
 ```
 Skill(skill="oh-my-claudecode:ralph", args="
   Implement unit-002: Auth API endpoints.
 
   ## Contracts (conform to these)
-  [inlined content from contracts/api-auth.yaml]
-  [inlined content from contracts/data-model.yaml]
+  ### api-auth (full file: contracts/api-auth.yaml)
+  [key interface definitions extracted by session skill]
+
+  ### data-model (full file: contracts/data-model.yaml)
+  [key interface definitions extracted by session skill]
 
   ## Constraints (do not violate)
-  [inlined content from .clawdance/constraints.yaml]
+  [content from .clawdance/constraints.yaml]
 
   ## Notes
   Record any cross-component invariants you discover in progress.txt.
+  If you need full contract details, read the file paths above.
 ")
 ```
 
@@ -291,7 +338,8 @@ and state updates.
    the Skill tool. OMC handles the implementation, review, and
    verification pipeline.
 5. **Write checkpoint** — on completion, write checkpoints/unit-NNN.yaml.
-   Update state.yaml.
+   Update state.yaml (move unit to completed, reset consecutive_failures
+   to 0).
 6. **Merge constraints** — if parallel units discovered new constraints
    (in their checkpoint new_constraints fields), merge into
    constraints.yaml.
@@ -369,16 +417,30 @@ while true; do
     exit 2
   fi
 
+  # Rate-limit-aware delay after unproductive sessions
+  if [ "$failures" -gt 0 ]; then
+    delay=$((30 * failures))
+    echo "Waiting ${delay}s before retry ($failures/$MAX_FAILURES)"
+    sleep "$delay"
+  fi
+
   SESSION="clawdance-$(date +%s)"
   tmux new-session -d -s "$SESSION" -c "$PROJECT_DIR"
-  tmux send-keys -t "$SESSION" -l \
-    'claude "Resume clawdance build. Read .clawdance/state.yaml and continue."'
+  tmux send-keys -t "$SESSION" -l 'claude "/clawdance resume"'
   tmux send-keys -t "$SESSION" Enter
 
   # Wait for session to end
   while tmux has-session -t "$SESSION" 2>/dev/null; do
     sleep 10
   done
+
+  # Check if session was productive (new checkpoint written)
+  new_checkpoint=$(yq -r '.last_checkpoint_at // ""' "$STATE_FILE")
+  if [ "$new_checkpoint" = "$LAST_CHECKPOINT" ]; then
+    current=$(yq -r '.consecutive_failures // 0' "$STATE_FILE")
+    yq -i ".consecutive_failures = $((current + 1))" "$STATE_FILE"
+  fi
+  LAST_CHECKPOINT="$new_checkpoint"
 done
 ```
 
@@ -386,6 +448,7 @@ done
 
 1. Read state.yaml for status and failure count
 2. Exit if completed, failed, or backed off
+3. Wait if previous session was unproductive (exponential: 30s × failures)
 3. Create a tmux session with claude
 4. Wait for the session to die (poll `tmux has-session`)
 5. Loop — check state again, spawn next session if needed
@@ -419,7 +482,7 @@ clawhip tmux new \
   -c "$PROJECT_DIR" \
   --keywords "error,failed,completed" \
   --stale-minutes 15 \
-  -- 'claude "Resume clawdance build. Read .clawdance/state.yaml."'
+  -- 'claude "/clawdance resume"'
 ```
 
 ### MVP: No session loop

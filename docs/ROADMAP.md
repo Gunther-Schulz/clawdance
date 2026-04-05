@@ -49,8 +49,9 @@ We are defining what to build. No implementation has started.
   placement.
 - [Gas Town analysis](research/gas-town-analysis.md) — Deep comparison with
   Gas Town fleet manager. Lessons learned, future integration path.
-- [Competitive landscape](research/competitive-landscape.md) — Direct and
-  adjacent competitors. Cross-session constraint persistence is unoccupied.
+- [Session case study](research/session-case-study.md) — Our design session
+  as first case study. Revealed the four-element iterative loop: find,
+  resolve, persist, redirect.
 
 ---
 
@@ -160,7 +161,14 @@ item and adjust accordingly.
 ### A — Implementation flow (product steps 3-4)
 
 The core. Making "here's a task, build it autonomously" work with OMC +
-our mitigations. **Spec draft:** [automation-flow](specs/automation-flow.md).
+our mitigations. **Spec:** [automation-flow](specs/automation-flow.md).
+**Implementation plan:** [implementation-plan-A](specs/implementation-plan-A.md).
+
+clawdance orchestrates four elements across session boundaries:
+find problems (bildhauer principles) → resolve them (investigation) →
+persist what's learned (constraints, checkpoints) → human redirects at
+transitions. No single element is sufficient; the value is their
+orchestration persisted across sessions.
 
 Architecture: three components.
 - **On-disk state** (task graph, checkpoints, constraints) — the real
@@ -193,16 +201,37 @@ Includes:
 
 Taking an app idea and producing design artifacts that step A consumes.
 
+The four-element iterative loop (find, resolve, persist, redirect) applies
+here too — our design session was a manual walk of item B. The loop is the
+general process, not just an implementation mechanism. See
+[session case study](research/session-case-study.md).
+
+**Artifact format is not prescribed.** We used specs, ADRs, research docs,
+and a roadmap during our design session. These worked for us but may not
+work for every project. The automation should prescribe the iterative loop,
+not the specific document types. The `design/` structure (DESIGN.md,
+STACK.md, contracts/) is the minimum handoff format to step A — the design
+phase may produce additional artifacts as needed.
+
 Includes:
 - Requirements clarification flow (scope, MVP boundary)
 - Architecture and tech stack selection
 - Contract/schema generation as files
-- Design document format that agents can consume
+- Design artifact format — minimum handoff to implementation, not a
+  complete prescription. Validated by testing A+B together (item C).
 
 ### C — Gap-filling between A and B
 
 Whatever we discover doesn't connect cleanly between design output and
 implementation input. The handoff, the seams. TBD as we work on A and B.
+
+Known areas to validate:
+- Is the minimum design format (DESIGN.md, STACK.md, contracts/)
+  sufficient for the decomposer to produce a good task graph?
+- Does the design phase produce enough constraint context to seed
+  constraints.yaml with `discovered_by: design`?
+- What additional artifacts (if any) does the implementation phase need
+  beyond the minimum format?
 
 ### D — Extensions
 

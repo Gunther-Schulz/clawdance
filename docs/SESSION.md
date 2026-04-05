@@ -38,6 +38,14 @@
 
 8. Added Telegram sink for clawhip to item A build order (step 6).
 
+9. Retrospective on bildhauer usage → updated bildhauer (observation 19,
+   conditional self-challenge, diminishing returns check, data-flow trace
+   elevation).
+
+10. Session case study analysis → discovered the four-element iterative
+    loop (find, resolve, persist, redirect) that clawdance orchestrates.
+    Added to spec as "What clawdance actually is."
+
 ### Documents created/updated
 
 - **Created** docs/research/real-world-validation.md
@@ -78,14 +86,30 @@ validated by building:
 5. Session loop (bash script)
 6. Telegram sink for clawhip (Rust)
 
+### Implementation plan
+
+See `docs/specs/implementation-plan-A.md` for the full plan (Bildhauer-
+validated, all items resolved, integration seams identified). Packaged
+as a Claude Code plugin (bildhauer/clippy pattern). Seven steps:
+
+1. constraints.yaml schema + plugin CLAUDE.md convention
+2. State format — task-graph, checkpoints, state YAML schemas
+3. Session skill SKILL.md (~150-200 lines, most complex piece)
+4. Decomposer SKILL.md (~80-120 lines)
+5. Session loop bash script (~30-40 lines, interim Telegram via curl)
+6. Telegram sink for clawhip (Rust)
+7. Full auto mode SKILL.md (~20 lines, thin wrapper over 3+4)
+
+Total: ~500 lines of prompts/schemas, ~40 lines of bash, one Rust module.
+Packaged as Claude Code plugin (bildhauer/clippy pattern).
+
 ### Next moves
 
-- **Option A:** Start building item A (constraints.yaml first)
-- **Option B:** Move to item B (design flow) — define the design artifact
-  format and requirements clarification flow that feeds into item A
+- **Option A:** Start building step 1 (constraints.yaml)
+- **Option B:** Move to roadmap item B (design flow) first
 - **Option C:** Try the full flow on a real project to validate end-to-end
-- **Option D:** Revisit ADR-003 (TypeScript) — may not need a programming
-  language at all for items 1-5, only Rust for the Telegram sink
+- **Option D:** Revisit ADR-003 (TypeScript) — may not need a language
+  at all for steps 1-5, only Rust for the Telegram sink
 
 ### Context the next session needs
 

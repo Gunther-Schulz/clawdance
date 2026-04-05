@@ -1,50 +1,44 @@
-# ADR-003: TypeScript for implementation
+# ADR-003: Language choices for implementation
 
-**Status:** Draft  
+**Status:** Superseded (was: TypeScript for implementation)
 **Date:** 2026-04-05
+**Superseded:** 2026-04-05, after architecture simplification
 
-## Context
+## Original context
 
-We need to choose a language for any code we build (skills, hooks, MCP
-servers, daemon). The main candidates are TypeScript and Rust.
+The original decision assumed we'd build a TypeScript daemon for session
+lifecycle management, with hooks, skills, and MCP servers. TypeScript was
+chosen for Claude Code ecosystem alignment.
 
-Arguments evaluated:
+## What changed
 
-**TypeScript:**
-- Claude Code is TypeScript. Plugin system, hooks, skills, MCP — same
-  ecosystem.
-- Official MCP SDK exists for TypeScript (`@modelcontextprotocol/sdk`).
-- OMC is TypeScript — easier interop for extending it.
-- Node.js is already required by Claude Code — no new runtime dependency.
-- Faster iteration during planning/prototyping phase.
+Investigation of OMC, Claude Code CLI, and clawhip revealed that the
+architecture is much simpler than assumed:
+- The "daemon" is a ~40-line bash script (session loop)
+- Skills are SKILL.md prompt templates (markdown, not code)
+- State is YAML files (no code)
+- The only real code is a Telegram sink for clawhip (Rust)
 
-**Rust:**
-- clawhip is Rust — native integration if we build a daemon.
-- Better for long-running daemon processes (memory, performance).
-- Single binary distribution (`cargo install`).
-- ratatui for TUI dashboard is best-in-class.
-- Official MCP SDK exists for Rust (`rmcp`).
+There is no TypeScript in the architecture. See ADR-005 and the
+[automation-flow spec](../specs/automation-flow.md).
 
-**Hybrid (TypeScript plugin + Rust daemon):**
-- Best of both but doubles build complexity, CI, and creates serialization
-  boundaries.
+## Revised decision
 
-## Decision
+No single implementation language. Each component uses the simplest
+appropriate tool:
 
-Lean TypeScript. The highest-value work is Claude Code integration (hooks,
-skills, MCP), where TypeScript has a clear advantage. Components where Rust
-shines (event bus, policy engine, cost tracker) are small enough that
-TypeScript handles them adequately.
-
-If a Rust daemon becomes necessary later (TUI dashboard, performance-
-critical event processing), it can be added without rewriting the plugin
-layer.
+| Component | Language | Why |
+|---|---|---|
+| Schemas (constraints, state, task graph) | YAML | File conventions, no code |
+| Skills (session, decomposer, build) | Markdown (SKILL.md) | Prompt templates, Claude Code plugin pattern |
+| Session loop | Bash | ~40 lines, spawns tmux, polls, loops |
+| Telegram sink | Rust | Extends clawhip (Rust codebase), follows existing sink pattern |
+| Plugin manifest | JSON | Standard Claude Code plugin format |
 
 ## Consequences
 
-- Single language, single build system, single CI pipeline
-- Direct access to Claude Code's ecosystem and OMC's codebase
-- Node.js runtime dependency (acceptable — Claude Code requires it)
-- TUI dashboard would use ink/blessed instead of ratatui (less mature
-  but functional)
-- Can revisit if performance requirements emerge
+- No build system, no CI pipeline for the core (it's text files)
+- Rust knowledge needed only for the Telegram sink (one module in clawhip)
+- No Node.js runtime dependency beyond what Claude Code already requires
+- If future components need real code (policy engine, cost tracker), the
+  language choice is made per-component based on what it integrates with
