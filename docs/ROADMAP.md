@@ -199,26 +199,23 @@ Includes:
 
 ### B — Design flow (product steps 1-2)
 
-Taking an app idea and producing design artifacts that step A consumes.
+**Now integrated into the main /clawdance skill as Phase 1-2.** The skill
+detects that no design artifacts exist and runs the design conversation
+inline: clarifies the idea, proposes architecture, produces design/
+artifacts (DESIGN.md, STACK.md, contracts/), with human approval at each
+checkpoint.
+
+This is a minimal item B — a conversational design phase that produces
+what the decomposer (Phase 2) consumes. A more sophisticated design flow
+(research, competitive analysis, deep architecture exploration) remains
+a future enhancement.
 
 The four-element iterative loop (find, resolve, persist, redirect) applies
-here too — our design session was a manual walk of item B. The loop is the
-general process, not just an implementation mechanism. See
-[session case study](research/session-case-study.md).
+here too. See [session case study](research/session-case-study.md).
 
-**Artifact format is not prescribed.** We used specs, ADRs, research docs,
-and a roadmap during our design session. These worked for us but may not
-work for every project. The automation should prescribe the iterative loop,
-not the specific document types. The `design/` structure (DESIGN.md,
-STACK.md, contracts/) is the minimum handoff format to step A — the design
-phase may produce additional artifacts as needed.
-
-Includes:
-- Requirements clarification flow (scope, MVP boundary)
-- Architecture and tech stack selection
-- Contract/schema generation as files
-- Design artifact format — minimum handoff to implementation, not a
-  complete prescription. Validated by testing A+B together (item C).
+**Artifact format is not prescribed.** The `design/` structure (DESIGN.md,
+STACK.md, contracts/) is the minimum. The design phase may produce
+additional artifacts as needed.
 
 ### C — Gap-filling between A and B
 

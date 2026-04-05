@@ -1,8 +1,7 @@
 # clawdance
 
 Autonomous app development with cross-session constraint persistence.
-A Claude Code plugin that orchestrates multi-session builds from design
-artifacts to working product.
+A Claude Code plugin that takes you from idea to working product.
 
 ## Prerequisites
 
@@ -22,109 +21,92 @@ cd clawdance
 The install script handles everything: plugin registration, installation,
 and PreCompact hook configuration. Then in Claude Code: `/reload-plugins`
 
-## Quick start
+## Usage
 
-### 1. Set up your project
-
-In Claude Code, in your project directory:
+### Start a new build
 
 ```
-/clawdance-setup
+/clawdance "Build me a task management app with real-time collaboration"
 ```
 
-This creates the `design/` directory with templates and verifies
-prerequisites (OMC plugin, PreCompact hook). Then fill in:
+clawdance detects that no design exists and walks you through:
 
-- `design/DESIGN.md` — architecture, components, how they connect
-- `design/STACK.md` — tech stack, testing approach
-- `design/contracts/` — one file per inter-component interface
+1. **Design** — clarifies your idea, proposes architecture, produces
+   design artifacts (DESIGN.md, STACK.md, contracts). You review and
+   approve.
+2. **Decompose** — breaks design into implementable units with
+   dependencies and parallelism. You review the task graph.
+3. **Build** — executes units autonomously via OMC (ralph for single
+   units, team for parallel groups). Writes checkpoints, discovers
+   constraints.
 
-### 2. Decompose
+### Resume after session death
 
-In Claude Code:
-
-```
-/clawdance-decompose design/
-```
-
-This reads your design artifacts and produces `.clawdance/`:
-- `task-graph.yaml` — units of work with dependencies and parallelism
-- `state.yaml` — build progress
-- `constraints.yaml` — cross-component invariants (starts empty or seeded
-  from design)
-- `checkpoints/` — completion records per unit
-
-### 3. Review
-
-Read `.clawdance/task-graph.yaml`. Check:
-- Are the units right? Too big? Too small?
-- Are dependencies correct?
-- Are parallel groups sensible?
-- Did the decomposer flag any missing contracts?
-
-Optionally seed `.clawdance/constraints.yaml` with invariants you already
-know about.
-
-### 4. Build
-
-**Manual (step-by-step):**
 ```
 /clawdance resume
 ```
-Re-run after each session ends. The skill reads state and continues from
-where it left off.
 
-**Full auto (no review step):**
-```
-/clawdance-build design/
-```
-Decomposes and builds in one shot.
+Reads `.clawdance/` state and continues from where it left off. Sessions
+can die at any point — rate limits, crashes, context exhaustion. No work
+is lost.
 
-**Automated loop (unattended):**
+### Check progress
+
+```
+/clawdance status
+```
+
+### Undo a unit
+
+```
+/clawdance rollback unit-003
+```
+
+### Automated loop (unattended)
+
 ```bash
 ./plugin/bin/clawdance-loop.sh /path/to/project
 ```
+
 Spawns tmux sessions, monitors for death, restarts automatically. Backs
 off after consecutive unproductive sessions.
-
-### 5. Monitor
-
-- `/clawdance status` — progress report in Claude Code
-- `cat .clawdance/state.yaml` — raw state
-- Telegram notifications (see below)
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `/clawdance-setup` | Set up project: create design/ templates, verify prerequisites |
-| `/clawdance-decompose [dir]` | Design artifacts → task graph |
-| `/clawdance resume` | Continue the build from where it left off |
+| `/clawdance "Build me X"` | Start from idea — design, decompose, build |
+| `/clawdance resume` | Continue after session death |
 | `/clawdance status` | Read-only progress report |
 | `/clawdance rollback unit-NNN` | Undo a unit, reset checkpoint |
-| `/clawdance-build [dir]` | Decompose + build in one shot (no review step) |
 
 ## How it works
 
-clawdance orchestrates four elements across session boundaries:
+clawdance is state-driven. It detects what exists and enters the right
+phase:
+
+| State | Phase |
+|---|---|
+| No design, no build state | Design — clarify idea, produce artifacts |
+| Design exists, no build state | Decompose — design → task graph |
+| Task graph pending | Review task graph, start building |
+| Build in progress | Resume from last checkpoint |
+| Build completed | Report done |
+
+Across all phases, clawdance orchestrates four elements:
 
 1. **Find problems** — pre-phase investigation, post-unit constraint
    review, data-flow tracing
-2. **Resolve problems** — delegates to OMC (ralph for single units, team
-   for parallel groups) for implementation and verification
+2. **Resolve problems** — delegates to OMC for implementation and
+   verification
 3. **Persist what's learned** — constraints.yaml, checkpoints, state.yaml
    survive session death
-4. **Human redirects** — review task graph after decomposition, monitor
-   progress, intervene when needed
-
-Sessions can die at any point (rate limits, crashes, context exhaustion).
-The next session reads `.clawdance/` state and continues. No work is lost.
+4. **Human redirects** — review design and task graph at checkpoints,
+   monitor progress, intervene when needed
 
 ## Telegram notifications
 
 ### Via session loop (built-in)
-
-Set environment variables before running the loop:
 
 ```bash
 export CLAWDANCE_TELEGRAM_TOKEN="your-bot-token"
@@ -134,8 +116,7 @@ export CLAWDANCE_TELEGRAM_CHAT="your-chat-id"
 
 ### Via clawhip (richer monitoring)
 
-Our clawhip fork adds native Telegram support. Configure in
-`clawhip.toml`:
+Our clawhip fork adds native Telegram support:
 
 ```toml
 [providers.telegram]
@@ -146,21 +127,6 @@ default_chat_id = "your-chat-id"
 event = "session.*"
 sink = "telegram"
 ```
-
-This gives you clawhip's keyword scanning, stale detection, and event
-filtering for Telegram alongside Discord/Slack.
-
-## Cross-component constraints
-
-clawdance tracks cross-component invariants in `.clawdance/constraints.yaml`.
-The plugin injects this convention into every Claude Code session:
-
-- Before starting work: read constraints that affect your components
-- After completing work: check for new cross-component invariants
-- When integration tests fail: add the missing constraint
-
-This prevents the validated failure mode where session boundaries cause
-integration bugs through lost constraints.
 
 ## State files
 
@@ -173,8 +139,15 @@ All state lives in `.clawdance/` in your project:
 | `constraints.yaml` | Cross-component invariants |
 | `checkpoints/unit-NNN.yaml` | Per-unit completion records |
 
-These files are human-readable and git-trackable. They persist across
-sessions, crashes, and rate limits.
+Design artifacts live in `design/`:
+
+| File | Purpose |
+|---|---|
+| `DESIGN.md` | Architecture, components, data flow |
+| `STACK.md` | Tech stack, testing approach |
+| `contracts/` | One file per inter-component interface |
+
+All files are human-readable and git-trackable.
 
 ## License
 

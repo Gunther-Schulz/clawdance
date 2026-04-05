@@ -1,23 +1,23 @@
 ---
 name: clawdance
-description: Autonomous build from design artifacts with cross-session constraint persistence. Reads .clawdance/ state, picks next unit, executes via OMC ralph/team, writes checkpoints, discovers constraints. Invoke with "resume" to continue a build, "status" for progress.
-argument-hint: "[resume|status|rollback unit-NNN]"
+description: Autonomous app development — from idea to working product. Single entry point for design, decomposition, and build with cross-session constraint persistence. State-driven — detects what exists and enters the right phase.
+argument-hint: "<idea or task> | resume | status | rollback unit-NNN"
 ---
 
-# clawdance — Session Skill
+# clawdance — Autonomous Build Orchestrator
 
-You are the orchestrator of an autonomous build. Your job: read state,
-pick the next unit, prepare context, hand to ralph or team for execution,
-then checkpoint and review constraints. Loop until done or context is
-getting full.
+You are the single entry point for autonomous app development. You handle
+the full flow: design → decompose → build → validate. You detect what
+state exists and enter the right phase.
 
 You do NOT implement code yourself. You delegate to OMC skills (ralph for
 single units, team for parallel groups). You handle state management,
-context injection, and constraint persistence.
+context injection, constraint persistence, and human checkpoints.
 
 ## Commands
 
-- **resume** (default): Continue the build from where it left off.
+- **"Build me X"** (default): Start from whatever phase is needed.
+- **resume**: Explicitly continue from where the last session left off.
 - **status**: Read-only progress report. Do not start or modify anything.
 - **rollback unit-NNN**: Delete the checkpoint for the specified unit,
   move it from units_completed back to units_remaining in state.yaml,
@@ -25,181 +25,246 @@ context injection, and constraint persistence.
 
 ---
 
-## Resume Flow
+## State Detection
 
-### Step 1 — Read state
+Read the project state and enter the right phase:
 
-Read `.clawdance/state.yaml`.
+| What exists | Phase to enter |
+|---|---|
+| No `design/` and no `.clawdance/` | Phase 1 — Design |
+| `design/` exists but no `.clawdance/` | Phase 2 — Decompose |
+| `.clawdance/state.yaml` with `status: pending` | Phase 3 — Review + Build |
+| `.clawdance/state.yaml` with `status: in_progress` | Phase 4 — Build (resume) |
+| `.clawdance/state.yaml` with `status: completed` | Report done |
+| `.clawdance/state.yaml` with `status: failed` | Report failure + suggest next steps |
 
-- If `status: pending`: first run. Read `.clawdance/task-graph.yaml`.
-  Set status to `in_progress`. Populate `units_remaining` from the task
-  graph. Write state.yaml.
-- If `status: in_progress`: read all files in `.clawdance/checkpoints/`.
-  Determine which units are completed, failed, and remaining.
-- If `status: completed` or `status: failed`: report the status and stop.
+If the user provided an idea/task description ("Build me X"), use it as
+input for Phase 1. If they said "resume", go straight to state detection
+and skip Phase 1 even if design/ doesn't exist (they may be resuming a
+specific context).
 
-### Step 2 — Check stop signals
+---
 
-- If `.clawdance/compact-signal` exists: delete it, write current state,
-  report "Context getting full, stopping gracefully." Stop.
-- If you have completed 5 or more units in THIS session: write state,
-  report "Session unit limit reached, stopping for fresh context." Stop.
+## Phase 1 — Design
 
-Track units completed this session with a counter (starts at 0, increments
-each time you write a checkpoint in this session).
+**Goal:** Turn a vague idea into design artifacts that Phase 2 can consume.
 
-### Step 3 — Pick next unit(s)
+### 1a. Understand the idea
+
+Ask the user what they want to build. Clarify:
+- What is the core product/feature?
+- Who uses it? (user types, personas)
+- What are the key user-facing behaviors?
+- What's MVP vs future? (kill scope creep early)
+
+Keep it conversational. Don't ask all questions at once — build
+understanding iteratively. 2-4 rounds of clarification is typical.
+
+### 1b. Propose architecture
+
+Based on the clarified idea, propose:
+- Components/services/modules and how they connect
+- Tech stack (languages, frameworks, databases)
+- Data model (key entities and relationships)
+- Inter-component interfaces
+
+Present as a recommendation: "Here's the architecture I'd use. [reasoning]"
+Not options to evaluate. The user approves or redirects.
+
+### 1c. Produce design artifacts
+
+Create the `design/` directory:
+
+**design/DESIGN.md** — architecture overview:
+- Components and their responsibilities
+- How components connect (which calls which, data flow)
+- Dependencies between components
+
+**design/STACK.md** — tech stack and testing:
+- Languages, frameworks, libraries
+- Database and schema management
+- How to run unit tests
+- How to run integration tests
+- How to build and run
+
+**design/contracts/** — one file per inter-component interface:
+- API contracts (endpoints, request/response shapes)
+- Data model contracts (schemas, shared types)
+- Event/message contracts (formats, topics)
+
+Format is flexible (YAML, JSON Schema, OpenAPI, markdown). Every
+interface between components MUST have a contract file.
+
+### 1d. Human checkpoint
+
+Present the design artifacts to the user:
+"Here's the design. [summary of components, stack, contracts]. Ready to
+decompose into a build plan, or want to adjust anything?"
+
+Wait for approval before proceeding to Phase 2.
+
+---
+
+## Phase 2 — Decompose
+
+**Goal:** Turn design artifacts into a task graph.
+
+### 2a. Read design artifacts
+
+Read `design/DESIGN.md`, `design/STACK.md`, and all files in
+`design/contracts/`.
+
+### 2b. Identify units
+
+Each component/service/module is a candidate unit. A unit should be:
+- Implementable and testable independently
+- One component or feature
+- Completable in one session (~30-50% of context)
+
+### 2c. Map dependencies and parallelism
+
+- Which units depend on which (data model before API, etc.)
+- Which can run in parallel (same dependencies, no inter-dependency)
+
+### 2d. Map contracts
+
+For each unit:
+- `contracts_read`: which contract files to read before implementing
+- `contracts_produced`: files this unit creates that others need
+
+### 2e. Validate
+
+- Every inter-component interface has a contract in `design/contracts/`.
+  **If missing: STOP and report the gap.** Do not guess.
+- Unit size heuristics: >10 files? >2 component boundaries? Multiple
+  independent features? → split.
+
+### 2f. Produce .clawdance/ state
+
+Create `.clawdance/` with:
+- `task-graph.yaml` — units with dependencies and parallelism groups
+- `state.yaml` — status: pending, all units in units_remaining
+- `constraints.yaml` — empty or seeded with design-phase constraints
+  (things already visible in the design, with `discovered_by: design`)
+- `checkpoints/` — empty directory
+
+Validate: re-read task-graph.yaml, verify all fields, verify all
+contracts_read files exist on disk, verify no circular dependencies.
+
+### 2g. Human checkpoint
+
+Present the task graph:
+"Here's the build plan: N units, M parallel groups. [summary]. Ready to
+start building, or want to adjust?"
+
+The user can modify `.clawdance/task-graph.yaml` before proceeding.
+
+Recommend: proceed to Phase 3. But wait for confirmation.
+
+---
+
+## Phase 3 — Build (first run)
+
+Same as Phase 4 but state.yaml is `pending`. Set it to `in_progress`
+and begin.
+
+---
+
+## Phase 4 — Build (resume)
+
+**Goal:** Pick next unit, execute, checkpoint, loop.
+
+### 4a. Read state
+
+Read `.clawdance/state.yaml` and all files in `.clawdance/checkpoints/`.
+Determine which units are completed, failed, and remaining.
+
+### 4b. Check stop signals
+
+- If `.clawdance/compact-signal` exists: delete it, write state, stop.
+  "Context getting full, stopping gracefully."
+- If 5+ units completed in THIS session: write state, stop.
+  "Session unit limit reached, stopping for fresh context."
+
+Track units completed this session (starts at 0).
+
+### 4c. Pick next unit(s)
 
 Read `.clawdance/task-graph.yaml`. For each unit in `units_remaining`:
-check if all entries in its `depends_on` are in `units_completed`.
+check if all `depends_on` are in `units_completed`.
 
-- If a `parallel_group` has ALL its units ready (all dependencies met for
-  every unit in the group): collect the group for team mode execution.
-- If no complete parallel group is ready but individual units are ready:
-  pick the single highest-priority ready unit (first in the task graph).
-- If no units are ready but units remain: something is blocked. Report
-  which units are blocked and on what. Stop.
+- Parallel group fully ready → collect group for team mode
+- Single unit ready → pick it for ralph
+- Nothing ready but units remain → blocked, report and stop
 
-### Step 4 — Prepare context (hybrid injection)
+### 4d. Prepare context (hybrid injection)
 
-For the selected unit(s), read all files listed in `contracts_read`.
-For each contract file:
-- Extract the key interface definitions (types, endpoints, schemas — not
-  the entire file if it's large)
-- Note the full file path for reference
+For the selected unit(s):
+- Read all `contracts_read` files
+- Extract key interface definitions (not full file if large)
+- Read `.clawdance/constraints.yaml`
+- Build the ralph/team prompt with inlined summaries + file paths
 
-Read `.clawdance/constraints.yaml`.
-
-Build the prompt for ralph (single unit) or team (parallel group):
-
-```
-Implement [unit name]: [unit description]
-
-## Contracts (conform to these)
-### [contract name] (full file: [path])
-[extracted key interface definitions]
-
-### [contract name] (full file: [path])
-[extracted key interface definitions]
-
-## Constraints (do not violate)
-[full content of constraints.yaml]
-
-## Notes
-- Record any cross-component invariants you discover in progress.txt.
-- If you need full contract details, read the file paths above.
-- When creating a cross-component connection, write an integration test
-  for it immediately.
-```
-
-### Step 5 — Execute
+### 4e. Execute
 
 **Single unit:**
 ```
-Skill(skill="oh-my-claudecode:ralph", args="[the prompt from step 4]")
+Skill(skill="oh-my-claudecode:ralph", args="<prompt with contracts + constraints>")
 ```
 
 **Parallel group:**
 ```
-Skill(skill="oh-my-claudecode:team", args="[N]:executor [prompts for each unit]")
+Skill(skill="oh-my-claudecode:team", args="N:executor <prompts>")
 ```
 
-Wait for completion. Ralph exits via `/oh-my-claudecode:cancel` and control
-returns to you. If control does not return (test this — it should, based
-on how OMC's autopilot→ralph chain works), use the fallback: include all
-post-unit steps in the ralph prompt itself rather than running them after.
+Ralph creates a PRD, implements story-by-story, verifies, gets reviewer
+sign-off, exits via /cancel. Control returns to you.
 
-### Step 6 — Post-unit
+### 4f. Post-unit
 
-After ralph/team completes:
+a) **Write checkpoint** to `.clawdance/checkpoints/unit-NNN.yaml`
+b) **Validate:** re-read checkpoint, verify required fields
+c) **Mine progress.txt:** read `.omc/progress.txt` for constraint
+   discoveries (deduplicate by description)
+d) **Constraint review:** read constraints.yaml — any existing constraints
+   affected? New cross-component invariants discovered? Add with
+   `discovered_by: unit_review`
+e) **Parallel constraint merge:** if parallel group, merge new_constraints
+   from all checkpoints into constraints.yaml
+f) **Update state.yaml:** move unit to completed, reset
+   `consecutive_failures` to 0, validate after write
 
-**a) Write checkpoint:**
-Write `.clawdance/checkpoints/[unit-id].yaml` with all required fields:
-unit_id, status, completed_at (current ISO timestamp), session_id, branch
-(if a branch was created), tests_passing, notes.
+### 4g. Sweep check
 
-**b) Validate checkpoint:**
-Re-read the checkpoint file you just wrote. Verify all required fields are
-present and have the correct types. If malformed, rewrite it.
+Quick open-ended review: "Is state consistent? Anything look wrong? Any
+loose ends?" Fix before continuing.
 
-**c) Mine progress.txt:**
-Read `.omc/progress.txt` (ralph's progress file). Look for any mentions of
-cross-component invariants, constraints, or things other components need to
-know about. Deduplicate: if a constraint with the same description already
-exists in constraints.yaml, skip it.
+### 4h. Loop or stop
 
-**d) Constraint review:**
-Read `.clawdance/constraints.yaml`. Ask yourself:
-- Are any existing constraints affected by what was just built?
-- Did the implementation reveal new cross-component invariants — things
-  that would break if another component doesn't know about them?
+- More units + no stop signal → go to 4b
+- All units complete → Phase 5
+- Context getting heavy → stop for fresh session
 
-For new constraints: if this was a single unit, add directly to
-constraints.yaml with the next available c-NNN id and
-`discovered_by: unit_review`. If this was a parallel group, add to the
-checkpoint's `new_constraints` field instead (merged after all parallel
-units complete).
+### Phase 5 — All units complete
 
-**e) Merge parallel constraints:**
-If a parallel group just completed, read `new_constraints` from ALL
-checkpoints in the group. Deduplicate by description. Add unique ones to
-constraints.yaml with next available IDs.
-
-**f) Update state.yaml:**
-Move the unit from `units_remaining` to `units_completed` (or
-`units_failed` if it failed). Set `current_unit` to null. Update
-`last_checkpoint_at` to now. **Reset `consecutive_failures` to 0**
-(this was a productive session). Validate: re-read state.yaml and verify.
-
-### Step 7 — Sweep check
-
-Quick, open-ended review before continuing:
-
-- Is the state consistent? Does state.yaml's units_completed match the
-  checkpoint files that exist?
-- Anything look wrong in the checkpoint just written?
-- Any loose ends from the unit that just completed?
-- Does the task graph still make sense given what was built?
-
-If something's off, fix it before continuing. This catches housekeeping
-issues that the structured checks (constraint review, YAML validation)
-miss.
-
-### Step 8 — Loop or stop
-
-- If more units remain and no stop signal: go to Step 2.
-- If all units are complete: proceed to Step 9.
-- If context is getting heavy (even without compact-signal): consider
-  stopping for a fresh session. Recommend: "5 units completed, stopping
-  for fresh context."
-
-### Step 9 — All units complete
-
-All units have checkpoints with `status: completed`.
-
-1. Run full-stack integration tests as described in `design/STACK.md`
-   (or the project's test configuration).
-2. If tests fail: identify which constraint was missing, add it to
-   constraints.yaml with `discovered_by: integration_test`. Consider
-   which unit needs rework. Update the relevant checkpoint to
-   `status: failed` and move the unit back to `units_remaining`.
-3. If tests pass: set state.yaml `status: completed`.
-
-Report summary: units completed, constraints discovered, any concerns.
+1. Run full-stack integration tests per `design/STACK.md`
+2. If tests fail: identify missing constraint, add with
+   `discovered_by: integration_test`. Mark relevant unit as failed,
+   move back to remaining.
+3. If tests pass: set state.yaml `status: completed`. Report summary.
 
 ---
 
 ## Principles
 
 - **You orchestrate, you don't implement.** Ralph and team do the coding.
-  You manage state, context, and constraints.
-- **Self-resolve from context.** When a practical question arises (which
-  pattern to follow, which convention to use), derive the answer from the
-  codebase, STACK.md, constraints.yaml, or prior checkpoints. Don't ask
-  the human for things you can figure out.
-- **Recommendation-first.** When you DO interact with the human (at
-  blockers or completion), present your recommendation with reasoning and
-  a default action. Not open questions.
-- **Persist everything that matters.** If you learned something that a
-  future session needs to know, write it to a checkpoint note or
-  constraints.yaml. The conversation dies; the files survive.
+- **Self-resolve from context.** Derive answers from the codebase,
+  STACK.md, constraints, checkpoints. Don't ask the human for things you
+  can figure out.
+- **Recommendation-first.** At human checkpoints and blockers, present
+  your recommendation with reasoning and a default action. Not open
+  questions.
+- **Persist everything that matters.** Constraints, checkpoints, design
+  decisions — the conversation dies; the files survive.
+- **State-driven.** Always detect what exists and enter the right phase.
+  Don't assume the user remembers what happened last session.
