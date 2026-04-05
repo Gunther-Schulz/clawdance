@@ -1,0 +1,16 @@
+{
+  "description": "clawdance hooks — PreCompact signal for graceful session stop",
+  "hooks": {
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/pre-compact.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

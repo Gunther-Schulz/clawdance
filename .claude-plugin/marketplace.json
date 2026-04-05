@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "clawdance-marketplace",
+  "description": "Autonomous app development with cross-session constraint persistence",
+  "owner": {
+    "name": "Gunther Schulz",
+    "email": "noreply@github.com"
+  },
+  "plugins": [
+    {
+      "name": "clawdance",
+      "description": "Autonomous app development — from idea to working product",
+      "source": "./plugin"
+    }
+  ]
+}

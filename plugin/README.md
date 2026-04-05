@@ -18,8 +18,8 @@ cd clawdance
 ./update-plugin.sh
 ```
 
-The install script handles everything: plugin registration, installation,
-and PreCompact hook configuration. Then in Claude Code: `/reload-plugins`
+The install script registers the marketplace and installs the plugin
+(including hooks). Then in Claude Code: `/reload-plugins`
 
 ## Usage
 
