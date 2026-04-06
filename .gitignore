@@ -1,3 +1,6 @@
 # Dev workspace — clone separately for development/PRs
 upstream/
 reference/
+
+# OMC runtime state
+.omc/
