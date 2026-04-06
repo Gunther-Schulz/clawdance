@@ -1,0 +1,142 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775461099745,
+  "projectRoot": "/home/g/dev/Gunther-Schulz/clawdance",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "src"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 2,
+      "lastAccessed": 1775461099744,
+      "keyFiles": [
+        "ROADMAP.md",
+        "SESSION.md"
+      ]
+    },
+    "plugin": {
+      "path": "plugin",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1775461099744,
+      "keyFiles": [
+        "CLAUDE.md",
+        "README.md"
+      ]
+    },
+    "reference": {
+      "path": "reference",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1775461099745,
+      "keyFiles": []
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1775461099745,
+      "keyFiles": []
+    },
+    "upstream": {
+      "path": "upstream",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1775461099745,
+      "keyFiles": []
+    },
+    "docs/schemas": {
+      "path": "docs/schemas",
+      "purpose": "Schema definitions",
+      "fileCount": 4,
+      "lastAccessed": 1775461099745,
+      "keyFiles": [
+        "checkpoints.md",
+        "constraints.md",
+        "state.md"
+      ]
+    },
+    "plugin/bin": {
+      "path": "plugin/bin",
+      "purpose": "Executable scripts",
+      "fileCount": 1,
+      "lastAccessed": 1775461099745,
+      "keyFiles": [
+        "clawdance-loop.sh"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "upstream/oh-my-claudecode/agents/code-reviewer.md",
+      "accessCount": 1,
+      "lastAccessed": 1775462023656,
+      "type": "file"
+    },
+    {
+      "path": "upstream/oh-my-claudecode/agents/security-reviewer.md",
+      "accessCount": 1,
+      "lastAccessed": 1775462023875,
+      "type": "file"
+    },
+    {
+      "path": "upstream/oh-my-claudecode/agents/verifier.md",
+      "accessCount": 1,
+      "lastAccessed": 1775462024317,
+      "type": "file"
+    },
+    {
+      "path": "upstream/oh-my-claudecode/agents/architect.md",
+      "accessCount": 1,
+      "lastAccessed": 1775462024764,
+      "type": "file"
+    },
+    {
+      "path": "upstream/oh-my-claudecode/skills/autopilot/SKILL.md",
+      "accessCount": 1,
+      "lastAccessed": 1775462032862,
+      "type": "file"
+    },
+    {
+      "path": "upstream/oh-my-claudecode/skills/team/SKILL.md",
+      "accessCount": 1,
+      "lastAccessed": 1775462045402,
+      "type": "file"
+    },
+    {
+      "path": "upstream/oh-my-claudecode/skills/ultraqa/SKILL.md",
+      "accessCount": 1,
+      "lastAccessed": 1775462046060,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

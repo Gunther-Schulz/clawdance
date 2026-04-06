@@ -1,114 +1,106 @@
 # Session Handoff
 
-**Last updated:** 2026-04-05
-**Status:** Item A fully implemented, plugin installed and working.
+**Last updated:** 2026-04-06
+**Status:** Major architecture revision in progress. First test complete.
 
 ## What happened this session
 
-1. Full design phase: real-world validation, architecture, competitive
-   analysis, Gas Town deep-dive, stack decisions, Bildhauer validation,
-   session case study, four-element loop articulation.
+### Phase 1: Design and implementation (completed)
+Full design phase: real-world validation, architecture, competitive
+analysis, Gas Town deep-dive, stack decisions, Bildhauer validation.
+Implemented item A: plugin with orchestrator + phase skills + session
+loop + Telegram sink for clawhip.
 
-2. Implemented all item A deliverables:
-   - Orchestrator + 3 phase skills (design, decompose, build)
-   - Plugin CLAUDE.md (constraint convention)
-   - PreCompact hook (hooks.json + script)
-   - Session loop bash script with rate-limit-aware retry + Telegram
-   - Telegram sink for clawhip (Rust, compiles, 272 tests pass)
-   - marketplace.json + plugin.json (proper plugin structure)
-   - README with install and usage docs
+### Phase 2: First test run (completed)
+Habit tracker API built from one-line idea. 8/8 units, 31 tests passing.
+Validated: design phase, decomposition, task graph, ralph execution,
+checkpointing. Found: transparency gap, constraint schema drift,
+direct agent delegation breaks checkpoint loop (fixed).
 
-3. Restructured from monolithic skill to orchestrator + phase skills:
-   - /clawdance — orchestrator (state-driven, invokes phase skills)
-   - clawdance-design — iterative design (one aspect per invocation)
-   - clawdance-decompose — design → task graph
-   - clawdance-build — one unit per invocation via OMC ralph/team
+### Phase 3: Architecture revision (in progress)
+Critical discovery: we were using only ralph from OMC, ignoring the
+full pipeline (QA cycling, multi-reviewer validation). This happened
+because we built our own orchestrator that reaches INTO OMC instead of
+handing off TO OMC.
 
-4. Integrated minimal item B (design flow) as Phase 1 of the orchestrator.
-   User says "Build me X" → design conversation → artifacts → decompose → build.
+Investigation of OMC's full pipeline revealed:
+- Phase 0-1: Expansion + Planning (we replaced with our design phase)
+- Phase 2: Execution via ralph (we use this)
+- Phase 3: QA cycling via ultraqa (we skipped entirely)
+- Phase 4: Multi-reviewer validation — architect + security-reviewer +
+  code-reviewer all must approve (we skipped entirely)
 
-5. Fixed plugin packaging: marketplace.json at repo root, plugin in
-   subdirectory, hooks.json for PreCompact, removed submodules that
-   blocked installation.
+Investigation of Clippy revealed:
+- Pre-implementation investigation with V1 evidence standards
+- 2-5 investigation cycles before implementation
+- Tracker with explicit unknowns, assumptions, design decisions
+- This is what prevents "build it wrong, then hotfix" — the validated
+  problem from our real-world data
 
-6. Updated bildhauer: observation 19/20, conditional self-challenge,
-   diminishing returns check, data-flow trace elevation.
+### Revised per-unit pipeline (decided)
 
-7. Plugin installed and verified: all 4 skills loaded, hook registered.
+```
+Per unit:
+  → Clippy investigate-design (understand codebase, resolve unknowns)
+  → OMC Phase 2 (ralph execution)
+  → [Phase 3-4 TBD — separate discussion]
+  → clawdance checkpoint + constraint review
+```
 
-### Key decisions
+Clippy provides pre-implementation investigation (what OMC lacks).
+OMC provides execution (what Clippy isn't designed for at scale).
+clawdance provides cross-session continuity (what both lack).
+
+### Clippy refactor plan (drafted)
+Plan at: coding-clippy/docs/plans/autonomous-mode.md
+Scope: make investigate-design skill invocable autonomously with results
+on disk. Internal looping (2-5 cycles per invocation), V1 standards
+unchanged, tracker written to .clippy/tracker.yaml.
+
+### Bildhauer updates
+- Observation 22: diminishing returns (+ session-level conflation failure)
+- Procedure: conditional self-challenge, explicit artifact identification,
+  retrospective (not predictive) diminishing returns check
+- Strategy: data-flow tracing as most productive finding mechanism
+
+## Key decisions this session
 
 - ADR-005: Thin layer on OMC, not Gas Town
 - ADR-003 superseded: no TypeScript (YAML + SKILL.md + bash + Rust)
-- Orchestrator + phase skills (not monolithic)
+- Orchestrator + phase skills architecture
 - Single entry point: /clawdance "Build me X"
-- Dependencies not submodules — dev workspace cloned separately
-- Self-resolution + recommendation-first interaction principles
+- Design phase: our interactive design → Clippy investigation → OMC
+  execution. Each tool does what it's best at.
+- .omc/ littering: install OMC per-project, not globally
 - Four-element loop: find, resolve, persist, redirect
 
 ## Where to pick up
 
-### Item A: complete
+### Immediate next
 
-Plugin installed, all skills loaded. Ready for first real test.
+1. **Implement Clippy autonomous investigation mode** — the refactor
+   plan is at coding-clippy/docs/plans/autonomous-mode.md. Add
+   --autonomous flag to investigate-design skill.
 
-### First test run findings (habit tracker API)
+2. **Integrate Clippy investigation into clawdance build skill** —
+   before invoking ralph, invoke Clippy's autonomous investigation.
+   Feed investigation findings into the ralph prompt.
 
-The basic flow works: detect → design (iterative) → decompose → task
-graph confirmation → build via ralph. Key findings:
+3. **Decide on post-implementation pipeline** — QA cycling (OMC ultraqa
+   or our own) + review (OMC reviewers or Clippy verify or our own).
+   Separate discussion.
 
-1. **Prerequisite check launched an Explore agent** — fixed (now fast
-   directory check only).
-2. **Process not transparent enough.** The user can't see what ralph is
-   being told, what the PRD stories are, what constraints were discovered,
-   what checkpoints contain. The orchestrator says "doing X" but doesn't
-   show its work. Needs design: transparency at transitions without
-   overwhelming the user.
-3. **Interactivity during ambiguous pre-implementation steps.** The
-   decomposer and design skills don't stop to ask if something is unclear
-   — they either proceed or hard-stop. Should present ambiguity and ask.
-4. **Design phase is a minimal stand-in** (item B). Works for the basic
-   flow but needs enhancement for deeper research, multi-pass exploration,
-   and existing codebase analysis.
-5. **Seam 2 (ralph exit → checkpoint)** — works. Ralph completed,
-   /cancel ran, control returned, checkpoint written. Verified on unit-001.
-6. **Direct agent delegation breaks the loop.** Unit-004 used executor
-   agent instead of ralph. Agent completed but session ended without
-   checkpointing. Fixed: build skill now mandates ralph for all units
-   (--no-prd for trivial ones).
-7. **Constraint schema drift.** Decomposer used `rule` instead of
-   `description`, `confidence: specified` instead of `inferred|verified`.
-   Skills don't strictly follow the schema we defined.
-8. **No constraints discovered during build.** All 8 constraints are
-   from design. Post-unit constraint review either didn't run or didn't
-   find anything. The self-improving tracking isn't being exercised.
-9. **Build completed successfully.** 8/8 units, 19 source files, 31
-   tests all passing, TypeScript compiles clean. Full working habit
-   tracker API built autonomously from a one-line idea.
-
-### Next steps
-
-1. **Design transparency layer** — what the orchestrator shows the user
-   at each transition. Balance between visibility and noise. This is the
-   main UX finding from the test.
-2. **Test on a real project** — /clawdance "Build me X" end-to-end.
-   Validates seam 2 (ralph exit → skill resumption) and overall flow.
-2. **Refine based on testing** — tune unit sizing, constraint discovery,
-   context management.
-3. **Push clawhip Telegram sink upstream** — or maintain as our fork.
-4. **Item B refinement** — the design phase is minimal (Phase 1 of
-   orchestrator). Enhance with deeper research, competitive analysis,
-   multi-pass exploration.
-5. **Item C** — validate A+B handoff with real projects.
+4. **Fix .omc/ littering** — update docs to recommend per-project OMC
+   install. Investigate if OMC has a config to disable state in non-OMC
+   projects.
 
 ### Context the next session needs
 
-- Plugin is installed: `/clawdance "Build me X"` works.
-- Core spec: `docs/specs/automation-flow.md`
-- Implementation plan: `docs/specs/implementation-plan-A.md`
-- `plugin/` is the product. `docs/` is dev reference.
-- `upstream/` and `reference/` are gitignored dev workspace — clone
-  separately for development.
-- OMC is a prerequisite plugin. Orchestrator checks at runtime.
-- Gas Town at ~/dev/reference/gastown for reference (ADR-005).
-- Bildhauer updated this session — observations 18-20.
+- Plugin is installed and working: /clawdance "Build me X"
+- First test produced a working habit tracker (31 tests passing)
+- Architecture is being revised: Clippy investigation + OMC execution
+- Clippy refactor plan exists at coding-clippy/docs/plans/
+- OMC source at upstream/oh-my-claudecode/ (cloned, not submodule)
+- Gas Town at ~/dev/reference/gastown
+- Bildhauer updated multiple times this session
+- Everything is a draft. User works out of order.
