@@ -1,106 +1,90 @@
 # Session Handoff
 
 **Last updated:** 2026-04-06
-**Status:** Major architecture revision in progress. First test complete.
+**Status:** Major architectural decision — merge clawdance into Clippy.
 
 ## What happened this session
 
-### Phase 1: Design and implementation (completed)
-Full design phase: real-world validation, architecture, competitive
-analysis, Gas Town deep-dive, stack decisions, Bildhauer validation.
-Implemented item A: plugin with orchestrator + phase skills + session
-loop + Telegram sink for clawhip.
+### Phase 1: Design, implementation, first test
+Full design phase, competitive analysis, Gas Town, bildhauer updates.
+Implemented item A plugin. First test: habit tracker, 31 tests passing.
 
-### Phase 2: First test run (completed)
-Habit tracker API built from one-line idea. 8/8 units, 31 tests passing.
-Validated: design phase, decomposition, task graph, ralph execution,
-checkpointing. Found: transparency gap, constraint schema drift,
-direct agent delegation breaks checkpoint loop (fixed).
+### Phase 2: Architecture revision
+Discovered we were using only ralph from OMC (Phase 2 of 5), skipping
+QA cycling and multi-reviewer validation. Investigated OMC's full
+pipeline and Clippy's investigation discipline.
 
-### Phase 3: Architecture revision (in progress)
-Critical discovery: we were using only ralph from OMC, ignoring the
-full pipeline (QA cycling, multi-reviewer validation). This happened
-because we built our own orchestrator that reaches INTO OMC instead of
-handing off TO OMC.
+### Phase 3: Tool relationship decision
+Evaluated: clawdance as separate orchestrator vs merging into Clippy.
 
-Investigation of OMC's full pipeline revealed:
-- Phase 0-1: Expansion + Planning (we replaced with our design phase)
-- Phase 2: Execution via ralph (we use this)
-- Phase 3: QA cycling via ultraqa (we skipped entirely)
-- Phase 4: Multi-reviewer validation — architect + security-reviewer +
-  code-reviewer all must approve (we skipped entirely)
+**Decision: merge clawdance into Clippy.**
 
-Investigation of Clippy revealed:
-- Pre-implementation investigation with V1 evidence standards
-- 2-5 investigation cycles before implementation
-- Tracker with explicit unknowns, assumptions, design decisions
-- This is what prevents "build it wrong, then hotfix" — the validated
-  problem from our real-world data
+Clippy becomes the single tool. Its composer gets extended with:
+- Design phase (interactive, iterative, contracts)
+- Decomposition (task graph)
+- Cross-session state (constraints, checkpoints, session loop)
+- OMC integration (calls ralph for execution — OMC optional, only
+  needed for autonomous mode)
+- Post-implementation pipeline: TBD, separate discussion
 
-### Revised per-unit pipeline (decided)
+Interactive Clippy stays zero-dependency (as today).
+Autonomous Clippy requires OMC as execution engine.
 
-```
-Per unit:
-  → Clippy investigate-design (understand codebase, resolve unknowns)
-  → OMC Phase 2 (ralph execution)
-  → [Phase 3-4 TBD — separate discussion]
-  → clawdance checkpoint + constraint review
-```
+**Rationale:** The investigation discipline IS what makes autonomous
+development work. Separating "the investigation tool" from "the build
+tool" was artificial. One plugin, one state directory, one install.
 
-Clippy provides pre-implementation investigation (what OMC lacks).
-OMC provides execution (what Clippy isn't designed for at scale).
-clawdance provides cross-session continuity (what both lack).
-
-### Clippy refactor plan (drafted)
-Plan at: coding-clippy/docs/plans/autonomous-mode.md
-Scope: make investigate-design skill invocable autonomously with results
-on disk. Internal looping (2-5 cycles per invocation), V1 standards
-unchanged, tracker written to .clippy/tracker.yaml.
+### Clippy refactor already done
+- investigate-design skill has autonomous mode (--autonomous flag)
+- Internal cycle looping, structured return, tracker to disk
+- Committed and pushed to coding-clippy repo
 
 ### Bildhauer updates
-- Observation 22: diminishing returns (+ session-level conflation failure)
-- Procedure: conditional self-challenge, explicit artifact identification,
-  retrospective (not predictive) diminishing returns check
-- Strategy: data-flow tracing as most productive finding mechanism
-
-## Key decisions this session
-
-- ADR-005: Thin layer on OMC, not Gas Town
-- ADR-003 superseded: no TypeScript (YAML + SKILL.md + bash + Rust)
-- Orchestrator + phase skills architecture
-- Single entry point: /clawdance "Build me X"
-- Design phase: our interactive design → Clippy investigation → OMC
-  execution. Each tool does what it's best at.
-- .omc/ littering: install OMC per-project, not globally
-- Four-element loop: find, resolve, persist, redirect
+- Observation 22 + session-level conflation fix
+- Conditional self-challenge
+- Retrospective diminishing returns
+- Data-flow tracing as most productive element
 
 ## Where to pick up
 
-### Immediate next
+### Immediate: merge plan
 
-1. **Implement Clippy autonomous investigation mode** — the refactor
-   plan is at coding-clippy/docs/plans/autonomous-mode.md. Add
-   --autonomous flag to investigate-design skill.
+1. **Plan the Clippy extension** — which clawdance skills move into
+   Clippy, how the composer handles autonomous mode with design →
+   investigate → OMC ralph → checkpoint.
 
-2. **Integrate Clippy investigation into clawdance build skill** —
-   before invoking ralph, invoke Clippy's autonomous investigation.
-   Feed investigation findings into the ralph prompt.
+2. **Move product code** — clawdance skills → Clippy skills.
+   clawdance repo becomes: docs, research, planning only (or archived).
 
-3. **Decide on post-implementation pipeline** — QA cycling (OMC ultraqa
-   or our own) + review (OMC reviewers or Clippy verify or our own).
-   Separate discussion.
+3. **State directory** — `.ai/` with subdirs? `.clippy/` extended?
+   Decide naming.
 
-4. **Fix .omc/ littering** — update docs to recommend per-project OMC
-   install. Investigate if OMC has a config to disable state in non-OMC
-   projects.
+4. **OMC integration in Clippy** — composer checks for OMC when
+   autonomous mode is requested. Optional dependency.
+
+5. **Cross-session state in Clippy** — constraints.yaml, checkpoints,
+   session loop. These are new Clippy capabilities.
+
+6. **Post-implementation pipeline** — separate discussion. Could be
+   Clippy verify, OMC Phase 3-4, both, or configurable.
+
+### clawdance repo future
+
+Options:
+- Archive (docs stay, product code moves to Clippy)
+- Keep as planning/research workspace (no product code)
+- The Telegram sink for clawhip stays here or moves to clawhip fork
 
 ### Context the next session needs
 
-- Plugin is installed and working: /clawdance "Build me X"
-- First test produced a working habit tracker (31 tests passing)
-- Architecture is being revised: Clippy investigation + OMC execution
-- Clippy refactor plan exists at coding-clippy/docs/plans/
-- OMC source at upstream/oh-my-claudecode/ (cloned, not submodule)
-- Gas Town at ~/dev/reference/gastown
+- **KEY DECISION: clawdance merges into Clippy.** Clippy becomes the
+  autonomous development orchestrator.
+- Clippy repo: ~/dev/Gunther-Schulz/coding-clippy
+- clawdance repo: ~/dev/Gunther-Schulz/clawdance (product code to move)
+- OMC source: ~/dev/Gunther-Schulz/clawdance/upstream/oh-my-claudecode
+- Gas Town: ~/dev/reference/gastown
+- Autonomous investigate-design already implemented in Clippy
+- First test (habit tracker) proved the basic flow works
+- All clawdance research/design docs are valuable — they inform the
+  Clippy extension design
 - Bildhauer updated multiple times this session
-- Everything is a draft. User works out of order.
