@@ -7,7 +7,7 @@ argument-hint: "<idea or focus area>"
 # clawdance-design — Design Phase
 
 Handle one focused aspect of design per invocation. Read what exists,
-do your focused work, write results to `.clawdance/design/`. The orchestrator calls
+do focused work, write results to `.clawdance/design/`. The orchestrator calls
 you multiple times at increasing resolution.
 
 ## Detect focus
@@ -25,7 +25,7 @@ Based on what exists and what the orchestrator asked for:
 
 ## Analyze focus (existing projects)
 
-When the orchestrator invokes you in analyze mode, the project already has
+When the orchestrator invokes this skill in analyze mode, the project already has
 source code. The job: understand what exists and produce design artifacts
 that describe the CURRENT system, not a new design.
 
@@ -71,7 +71,7 @@ skill upgrades to `verified` when it confirms them during implementation.
 
 ### Report
 
-Present what you found: "Here's the architecture I see. [summary].
+Present the findings: "Here's the architecture I see. [summary].
 [N] constraints discovered." The human corrects or approves.
 
 ## Architecture focus
@@ -146,12 +146,12 @@ decomposition."
 ## Principles
 
 - **One focus per invocation.** Don't try to do everything at once. The
-  orchestrator calls you multiple times.
+  orchestrator calls this skill multiple times.
 - **Read before writing.** Always read existing artifacts first. Build on
   what's there, don't contradict it. Analyze mode produces the baseline.
   Subsequent passes AMEND existing artifacts — add new components,
   update contracts — don't replace the whole document.
-- **Recommendation-first.** Present your design with reasoning. The user
+- **Recommendation-first.** Present the design with reasoning. The user
   approves or redirects.
 - **Write to disk.** Every decision goes into a design artifact. The
   conversation dies; the files survive.

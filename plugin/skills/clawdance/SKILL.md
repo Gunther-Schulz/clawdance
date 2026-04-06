@@ -8,7 +8,7 @@ argument-hint: "<idea or task> | resume | status | rollback unit-NNN"
 
 Orchestration loop. Detect state, recommend actions,
 confirm with the user at phase transitions, and invoke focused phase
-skills. You do NOT do the work yourself — you delegate.
+skills. Do NOT do the work directly — delegate.
 
 All clawdance state lives under `.clawdance/` — one hidden directory,
 clean project root.
@@ -66,7 +66,7 @@ If corrupted: report what's wrong, suggest fix. Don't guess, don't crash.
 
 ### 2. Detect and recommend
 
-Read project state. Present what you see and recommend the next action.
+Read project state. Present the current state and recommend the next action.
 **Confirm with the user at non-obvious decisions. Act without confirming
 when intent is unambiguous.**
 
@@ -210,7 +210,7 @@ read the actual files for details.
 - **Each invocation gets fresh context.** Controlled context boundaries.
 - **Self-resolve during autonomous phases.** During build, derive answers
   from codebase, constraints, checkpoints. Don't interrupt the user for
-  things you can figure out.
+  things derivable from context.
 - **Recommendation-first at interactive phases.** Present judgment with
   reasoning. The user reacts, not evaluates.
 - **Persist everything.** Files survive, conversations don't.

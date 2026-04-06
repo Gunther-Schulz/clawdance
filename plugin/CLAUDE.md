@@ -7,11 +7,11 @@ This project may track cross-component invariants in
 
 - **Before starting any unit of work:** read `.clawdance/constraints.yaml`.
   Check if any constraints affect the components you're about to modify.
-  Each constraint lists which components it `affects` — if your work
+  Each constraint lists which components it `affects` — if the current work
   touches any of those components, the constraint applies to you.
 
 - **After completing a unit of work:** review `.clawdance/constraints.yaml`.
-  Are any existing constraints affected by what you just built? Did you
+  Are any existing constraints affected by what was just built? Were
   discover new cross-component invariants — things that would break if
   another component doesn't know about them? Add new constraints with
   `discovered_by: unit_review`.
@@ -21,7 +21,7 @@ This project may track cross-component invariants in
   catches which constraints, allowing the process to self-improve over time.
 
 - **When modifying a component:** check all constraints where that component
-  appears in the `affects` list. If your change would violate a constraint,
+  appears in the `affects` list. If a change would violate a constraint,
   either respect it or update the constraint with reasoning.
 
 ## Constraint format

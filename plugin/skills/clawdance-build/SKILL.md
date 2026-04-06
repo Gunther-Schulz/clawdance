@@ -8,7 +8,7 @@ argument-hint: "[unit-NNN or automatic]"
 
 Handle one unit (or one parallel group) per invocation. Read state,
 prepare context, delegate to OMC for implementation, write checkpoint,
-review constraints. The orchestrator calls you repeatedly for each unit.
+review constraints. The orchestrator calls this skill repeatedly for each unit.
 
 ## Steps
 
@@ -21,7 +21,7 @@ the first build invocation (status: pending), set status to in_progress.
 
 - `.clawdance/compact-signal` exists → delete it, report "Context full."
   Return to orchestrator.
-- Orchestrator told you a specific unit → use that.
+- Orchestrator specified a specific unit → use that.
 - Otherwise: pick the next ready unit (see step 3).
 
 ### 3. Pick unit
@@ -56,7 +56,7 @@ Implement [unit name]: [unit description]
 ## Notes
 - Record cross-component invariants in progress.txt.
 - When creating a cross-component connection, write an integration test.
-- If you need full contract details, read the file paths above.
+- If full contract details, read the file paths above.
 ```
 
 ### 5. Execute
@@ -124,7 +124,7 @@ d) **Constraint review:** read `.clawdance/constraints.yaml`. Any existing
    Write new constraints DIRECTLY to `.clawdance/constraints.yaml` (not
    just to the checkpoint). The checkpoint's `new_constraints` field is
    a record of what was found, but constraints.yaml is the authoritative
-   file that future units read. If you found constraints and wrote them
+   file that future units read. If constraints were found and wrote them
    to the checkpoint but not to constraints.yaml, they are invisible to
    the next unit.
    
