@@ -1,12 +1,12 @@
 ---
 name: clawdance-build
-description: Build phase skill — handles one unit or parallel group per invocation. Reads state, prepares context, invokes ralph/team, writes checkpoint, reviews constraints. Called by the orchestrator repeatedly.
+description: This skill should be used when the orchestrator needs to "build a unit", "execute implementation", or "run ralph on a unit". Build phase — handles one unit per invocation, writes checkpoint, reviews constraints.
 argument-hint: "[unit-NNN or automatic]"
 ---
 
 # clawdance-build — Build Phase
 
-You handle one unit (or one parallel group) per invocation. Read state,
+Handle one unit (or one parallel group) per invocation. Read state,
 prepare context, delegate to OMC for implementation, write checkpoint,
 review constraints. The orchestrator calls you repeatedly for each unit.
 

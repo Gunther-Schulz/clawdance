@@ -1,6 +1,6 @@
 ---
 name: clawdance-decompose
-description: Decompose design artifacts into a task graph. Reads .clawdance/design/, produces .clawdance/ with task-graph.yaml, state.yaml, constraints.yaml. Called by the orchestrator after design is complete.
+description: This skill should be used when the orchestrator needs to "decompose", "create task graph", "break down design into units". Reads design artifacts, produces task graph with units, dependencies, and parallelism groups.
 argument-hint: "[path to .clawdance/design/ directory, default: .clawdance/design/]"
 ---
 

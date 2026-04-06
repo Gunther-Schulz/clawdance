@@ -1,12 +1,12 @@
 ---
 name: clawdance-design
-description: Design phase skill — handles one aspect of design per invocation (architecture, stack, contracts, or validation). Called by the orchestrator iteratively at increasing resolution.
+description: This skill should be used when the orchestrator needs to "design architecture", "create contracts", "define tech stack", or "validate design". Handles one aspect of design per invocation at increasing resolution.
 argument-hint: "<idea or focus area>"
 ---
 
 # clawdance-design — Design Phase
 
-You handle one focused aspect of design per invocation. Read what exists,
+Handle one focused aspect of design per invocation. Read what exists,
 do your focused work, write results to `.clawdance/design/`. The orchestrator calls
 you multiple times at increasing resolution.
 
@@ -26,7 +26,7 @@ Based on what exists and what the orchestrator asked for:
 ## Analyze focus (existing projects)
 
 When the orchestrator invokes you in analyze mode, the project already has
-source code. Your job: understand what exists and produce design artifacts
+source code. The job: understand what exists and produce design artifacts
 that describe the CURRENT system, not a new design.
 
 ### Read the codebase (targeted, not exhaustive)

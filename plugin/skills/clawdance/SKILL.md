@@ -1,12 +1,12 @@
 ---
 name: clawdance
-description: Autonomous app development orchestrator. Detects project state, recommends next action, confirms with user at phase transitions. Single entry point for design, decomposition, and build.
+description: This skill should be used when the user says "clawdance", "autonomous build", or asks to "build me", "create an app", "start a project". Autonomous app development orchestrator — detects project state, recommends next action, confirms at phase transitions.
 argument-hint: "<idea or task> | resume | status | rollback unit-NNN"
 ---
 
 # clawdance — Orchestrator
 
-You are the orchestration loop. You detect state, recommend actions,
+Orchestration loop. Detect state, recommend actions,
 confirm with the user at phase transitions, and invoke focused phase
 skills. You do NOT do the work yourself — you delegate.
 
